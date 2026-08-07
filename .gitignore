@@ -1,0 +1,45 @@
+# --- Node / TypeScript ---
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Environment and secrets ---
+.env*
+!.env.example
+*.pem
+*.key
+
+# --- Terraform ---
+*.tfvars
+*.tfvars.json
+terraform.tfstate
+terraform.tfstate.*
+.terraform/
+crash.log
+
+# --- Kubernetes ---
+kubeconfig
+kubeconfig*
+
+# --- Editors and OS ---
+.DS_Store
+.idea/
+*.swp
+
+# --- Test and coverage output ---
+coverage/
+.coverage
+htmlcov/
