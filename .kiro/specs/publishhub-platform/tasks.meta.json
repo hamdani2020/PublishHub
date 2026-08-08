@@ -6,6 +6,73 @@
         "executionId": "1d6da63c-1275-427a-9d2e-b932ee926030",
         "chatSessionId": "sess_92a9f18d-c1e5-4d6f-acc3-4ca2cca18159",
         "timestamp": 1786144093364
+      },
+      {
+        "executionId": "1d6da63c-1275-427a-9d2e-b932ee926030",
+        "chatSessionId": "sess_92a9f18d-c1e5-4d6f-acc3-4ca2cca18159",
+        "timestamp": 1786144462293
+      }
+    ],
+    "1.2 Write the Makefile with a self-documenting help target": [
+      {
+        "executionId": "1d6da63c-1275-427a-9d2e-b932ee926030",
+        "chatSessionId": "sess_92a9f18d-c1e5-4d6f-acc3-4ca2cca18159",
+        "timestamp": 1786144467743
+      },
+      {
+        "executionId": "1d6da63c-1275-427a-9d2e-b932ee926030",
+        "chatSessionId": "sess_92a9f18d-c1e5-4d6f-acc3-4ca2cca18159",
+        "timestamp": 1786145256302
+      }
+    ],
+    "1. Repository foundation": [
+      {
+        "executionId": "1d6da63c-1275-427a-9d2e-b932ee926030",
+        "chatSessionId": "sess_92a9f18d-c1e5-4d6f-acc3-4ca2cca18159",
+        "timestamp": 1786145256480
+      }
+    ],
+    "2.1 Document the message schema and create the shared test fixture": [
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786151442585
+      },
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786151943431
+      }
+    ],
+    "2.2 Implement the TypeScript queue client with Redis and SQS backends": [
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786151952281
+      },
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786154623161
+      }
+    ],
+    "2.3 Implement the Python queue client with Redis and SQS backends": [
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786154628444
+      },
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786156414773
+      }
+    ],
+    "2. Message contract and queue abstraction": [
+      {
+        "executionId": "b3fd4fad-e62c-4751-96c1-8e7f9c5f8cde",
+        "chatSessionId": "sess_da1cfa81-1212-49b6-9a51-d66044b22c21",
+        "timestamp": 1786156414883
       }
     ]
   }

@@ -1,0 +1,307 @@
+{
+  "$comment": "Canonical PublishJob envelope fixture, version 1. Shared contract between apps/api (Vitest) and apps/worker (pytest) so the two implementations cannot drift. Documented in docs/message-schema.md. Edit this file and that document together, never one alone.",
+  "schema_version": 1,
+  "required_fields": [
+    "schema_version",
+    "job_id",
+    "post_id",
+    "content",
+    "platforms",
+    "attempt",
+    "enqueued_at",
+    "trace_context"
+  ],
+  "constraints": {
+    "content_min_length": 1,
+    "content_max_length": 5000,
+    "platform_allow_list": ["twitter", "linkedin", "mastodon", "bluesky"],
+    "platforms_min_items": 1,
+    "platforms_unique": true,
+    "attempt_min": 1,
+    "patterns": {
+      "job_id": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "post_id": "^post_[0-9A-HJKMNP-TV-Z]{26}$",
+      "enqueued_at": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "dead_letter_reasons": [
+      "unparseable_payload",
+      "unknown_schema_version",
+      "schema_validation_failed",
+      "max_attempts_exhausted"
+    ]
+  },
+  "canonical": {
+    "schema_version": 1,
+    "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+    "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+    "content": "Shipping PublishHub: kind + ArgoCD + KEDA, all from one Makefile.",
+    "platforms": ["twitter", "linkedin"],
+    "attempt": 1,
+    "enqueued_at": "2026-08-07T10:00:00.000Z",
+    "trace_context": {
+      "x-datadog-trace-id": "6249442685991245312",
+      "x-datadog-parent-id": "8114249130118331704",
+      "x-datadog-sampling-priority": "1"
+    }
+  },
+  "variants": [
+    {
+      "name": "tracing_disabled",
+      "description": "OBSERVABILITY_ENABLED=false. trace_context is an empty object, never null or absent, and the worker starts a root span.",
+      "message": {
+        "schema_version": 1,
+        "job_id": "b1d5c6e7-8a94-4f21-b3c7-2e9d0a1b4c5d",
+        "post_id": "post_01HZX3R4S8B7WKE9M0PT2ZDNXC",
+        "content": "Local run, no Datadog account required.",
+        "platforms": ["mastodon"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:01.250Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "retry_attempt",
+      "description": "Re-enqueued by the worker after a failure: same job_id and post_id, attempt incremented, enqueued_at refreshed to this enqueue.",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Shipping PublishHub: kind + ArgoCD + KEDA, all from one Makefile.",
+        "platforms": ["twitter", "linkedin"],
+        "attempt": 3,
+        "enqueued_at": "2026-08-07T10:00:07.500Z",
+        "trace_context": {
+          "x-datadog-trace-id": "6249442685991245312",
+          "x-datadog-parent-id": "8114249130118331704",
+          "x-datadog-sampling-priority": "1"
+        }
+      }
+    },
+    {
+      "name": "all_platforms",
+      "description": "Every allow-listed platform, submission order preserved.",
+      "message": {
+        "schema_version": 1,
+        "job_id": "7c4e2a19-0b3d-4c6e-a95f-1d8b7e6c5a40",
+        "post_id": "post_01HZX4A2B9C3D4E5F6G7H8J9K0",
+        "content": "Fan-out across every target.",
+        "platforms": ["twitter", "linkedin", "mastodon", "bluesky"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:02.000Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "unicode_content",
+      "description": "Content is counted in characters, not bytes, and passes through unmodified: emoji, combining marks, and RTL text all survive the round trip.",
+      "message": {
+        "schema_version": 1,
+        "job_id": "e2f10a3b-4c5d-4e6f-9a8b-0c1d2e3f4a5b",
+        "post_id": "post_01HZX5M6N7P8Q9R0S1T2V3W4X5",
+        "content": "Déployé 🚀 — نشرنا الآن — 完了",
+        "platforms": ["bluesky"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:03.125Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "unknown_field_forward_compat",
+      "description": "An additive field from a newer producer. Consumers must ignore unknown top-level fields rather than reject them, so a rolling deploy stays safe. This is valid and must NOT be dead-lettered.",
+      "message": {
+        "schema_version": 1,
+        "job_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        "post_id": "post_01HZX6Y7Z8A9B0C1D2E3F4G5H6",
+        "content": "Sent by a newer API build.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:04.000Z",
+        "trace_context": {},
+        "scheduled_for": "2026-08-07T12:00:00.000Z"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "truncated_json",
+      "reason": "unparseable_payload",
+      "raw": "{\"schema_version\": 1, \"job_id\": \"3f2a9b0c-5d41-4e8b"
+    },
+    {
+      "name": "not_an_object",
+      "reason": "unparseable_payload",
+      "raw": "[\"twitter\", \"linkedin\"]"
+    },
+    {
+      "name": "empty_payload",
+      "reason": "unparseable_payload",
+      "raw": ""
+    },
+    {
+      "name": "future_schema_version",
+      "reason": "unknown_schema_version",
+      "message": {
+        "schema_version": 2,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Written by a producer we do not understand yet.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.000Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "missing_schema_version",
+      "reason": "unknown_schema_version",
+      "message": {
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "No version, no guessing.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.100Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "missing_post_id",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "content": "Nowhere to write the terminal status.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.200Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "empty_content",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.300Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "blank_content",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "   \n\t ",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.350Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "content_wrong_type",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": null,
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.400Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "platforms_empty",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "No target to publish to.",
+        "platforms": [],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.500Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "platform_not_in_allow_list",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Unsupported target.",
+        "platforms": ["twitter", "myspace"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.600Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "platforms_duplicated",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Would publish twice to the same platform.",
+        "platforms": ["twitter", "twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.700Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "attempt_below_minimum",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Attempts are one-based.",
+        "platforms": ["twitter"],
+        "attempt": 0,
+        "enqueued_at": "2026-08-07T10:00:05.800Z",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "enqueued_at_wrong_format",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Local time with no offset is ambiguous.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07 10:00:05",
+        "trace_context": {}
+      }
+    },
+    {
+      "name": "trace_context_null",
+      "reason": "schema_validation_failed",
+      "message": {
+        "schema_version": 1,
+        "job_id": "3f2a9b0c-5d41-4e8b-9c2a-7d6e5f4a3b21",
+        "post_id": "post_01HZX3QK7M9V4TDR8N2C5EAB6F",
+        "content": "Absent tracing is an empty object, not null.",
+        "platforms": ["twitter"],
+        "attempt": 1,
+        "enqueued_at": "2026-08-07T10:00:05.900Z",
+        "trace_context": null
+      }
+    }
+  ]
+}

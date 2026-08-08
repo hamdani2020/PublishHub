@@ -6,27 +6,27 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
 
 ---
 
-- [~] 1. Repository foundation
-- [-] 1.1 Initialize the repository skeleton
+- [x] 1. Repository foundation
+- [x] 1.1 Initialize the repository skeleton
   - Create the directory structure from the design's repository layout
   - Write `.gitignore` covering `node_modules`, `dist`, `__pycache__`, `.venv`, `.env*`, `*.tfvars`, `terraform.tfstate*`, `.terraform/`, `kubeconfig*`, `.DS_Store`
   - Initialize the Git repository on branch `main` with an initial commit
   - _Requirements: 16.5_
 
-- [ ] 1.2 Write the Makefile with a self-documenting help target
+- [x] 1.2 Write the Makefile with a self-documenting help target
   - Implement `help` as the default target, parsing target comments into a description list
   - Add tool-check logic that fails with the missing tool's name and install command
   - Stub the targets the later tasks fill in: `cluster-up`, `platform-install`, `apps-build`, `argocd-sync`, `clean`, `test`, `lint`
   - Deliberately omit any target that runs `terraform apply` or `destroy`
   - _Requirements: 1.6, 1.7, 13.8_
 
-- [ ] 2. Message contract and queue abstraction
-- [ ] 2.1 Document the message schema and create the shared test fixture
+- [x] 2. Message contract and queue abstraction
+- [x] 2.1 Document the message schema and create the shared test fixture
   - Write `docs/message-schema.md` defining the versioned envelope and every field
   - Create a canonical JSON fixture under a shared path consumed by both test suites
   - _Requirements: 5.6_
 
-- [ ] 2.2 Implement the TypeScript queue client with Redis and SQS backends
+- [x] 2.2 Implement the TypeScript queue client with Redis and SQS backends
   - Define the `QueueClient` interface and `PublishJob` type matching the schema
   - Implement the Redis backend using `LPUSH` and the `BRPOPLPUSH` reliable-queue pattern
   - Implement the SQS backend using `SendMessage` and long-polling `ReceiveMessage`
@@ -34,7 +34,7 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write unit tests for both backends against a fake client, plus the schema fixture assertion
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [ ] 2.3 Implement the Python queue client with Redis and SQS backends
+- [x] 2.3 Implement the Python queue client with Redis and SQS backends
   - Mirror the same interface, semantics, and factory behavior as the TypeScript client
   - Implement the stale-`processing`-entry reaper for the Redis backend
   - Write pytest coverage for both backends and assert against the same schema fixture

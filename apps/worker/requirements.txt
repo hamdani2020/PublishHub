@@ -1,0 +1,9 @@
+# PublishHub worker — runtime dependencies.
+#
+# Versions are pinned exactly, never floating ranges, so an image built today and
+# an image built in six months contain the same code (Requirement 6.6).
+#
+# Spec task 2.3 needs only the queue clients. `ddtrace` (observability, task 4.5)
+# and `tenacity` (retry backoff, task 4.3) join this file when those tasks land.
+redis==8.1.0
+boto3==1.43.67

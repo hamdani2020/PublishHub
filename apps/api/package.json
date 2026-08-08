@@ -1,0 +1,25 @@
+{
+  "name": "@publishhub/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PublishHub API gateway. Currently contains the queue abstraction (spec task 2.2); the HTTP layer arrives with task 3.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "3.1106.0",
+    "ioredis": "5.11.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

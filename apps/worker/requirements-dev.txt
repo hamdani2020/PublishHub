@@ -1,0 +1,6 @@
+# PublishHub worker — test and development dependencies.
+#
+# Separate from requirements.txt so the container image never carries the test
+# toolchain (Requirement 6.2). Pinned for the same reason as the runtime pins.
+-r requirements.txt
+pytest==9.1.1
