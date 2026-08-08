@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Keep New Tests In Test Directories",
+      "trigger": "PostFileCreate",
+      "description": "When a test file is created, require it to live in a dedicated test directory (testing/ for TypeScript, tests/ for Python) instead of beside production source.",
+      "matcher": "(\\.test\\.tsx?$|_test\\.py$|(^|/)test_[^/]*\\.py$)",
+      "action": {
+        "type": "agent",
+        "prompt": "A test file was just created. Verify it is in a dedicated test directory, not beside the production source it exercises.\n\nRepository convention:\n- TypeScript: `*.test.ts` / `*.test.tsx` belong in a `testing/` directory (or `__tests__/`) inside the module, e.g. `src/posts/testing/post-store.test.ts`. Never `src/posts/post-store.test.ts`.\n- Python: `test_*.py` / `*_test.py` belong under the package's `tests/` directory, e.g. `apps/worker/tests/test_factory.py`.\n\nRun `bash scripts/check-test-layout.sh` to confirm. If the new file is misplaced, move it into the correct test directory and fix its relative imports: imports of production source gain one `../` level, and an import that pointed into `./testing/` becomes a plain sibling import. Do not change the test's assertions while relocating it. Re-run the affected suite (`make test-api` or `make test-worker`) afterwards so the move is proven green.\n\nTest-support code that contains no test cases (fakes, fixtures, capture helpers) also belongs in these `testing/` directories, and that is already the case here, so leave those files where they are."
+      }
+    }
+  ]
+}

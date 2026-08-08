@@ -153,8 +153,18 @@ api-port-forward: require-kubectl ## Forward the API to localhost:8081
 ##@ Quality gates
 
 .PHONY: lint
-lint: ## Lint every service and the Helm chart
-	$(call not-implemented,lint,3.1 4.1 5.1 and 9.5)
+lint: check-test-layout lint-api ## Lint every service and the Helm chart
+	@printf '\n  Worker, web, and Helm chart linting arrive with spec tasks 4.1, 5.1, and 9.5.\n\n'
+
+.PHONY: lint-api
+lint-api: require-node ## Lint and typecheck the API (TypeScript)
+	@cd apps/api && npm install --no-audit --no-fund --silent && npm run lint && npm run typecheck
+
+# Same check the `.kiro/hooks/test-layout-*` hooks run, so a misplaced test file
+# fails the same way in the editor, in `make lint`, and in CI.
+.PHONY: check-test-layout
+check-test-layout: ## Fail if any test file sits beside production source
+	@bash scripts/check-test-layout.sh
 
 .PHONY: test
 test: test-api test-worker ## Run unit and integration tests for every service

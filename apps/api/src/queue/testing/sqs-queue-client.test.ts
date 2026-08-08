@@ -8,10 +8,10 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createPublishJob, serializePublishJob } from './publish-job.js';
-import { SQS_MAX_WAIT_SECONDS, SqsQueueClient } from './sqs-queue-client.js';
-import { FakeSqsPort } from './testing/fake-sqs-port.js';
-import type { DeadLetterEvent, PublishJob } from './types.js';
+import { createPublishJob, serializePublishJob } from '../publish-job.js';
+import { SQS_MAX_WAIT_SECONDS, SqsQueueClient } from '../sqs-queue-client.js';
+import { FakeSqsPort } from './fake-sqs-port.js';
+import type { DeadLetterEvent, PublishJob } from '../types.js';
 
 const QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/123456789012/publishhub-jobs';
 const DLQ_URL = 'https://sqs.us-east-1.amazonaws.com/123456789012/publishhub-jobs-dlq';

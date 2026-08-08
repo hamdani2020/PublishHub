@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Audit Test File Layout",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/check-test-layout.sh"
+      },
+      "description": "After each agent turn, scan the repository for test files sitting next to production source and report every violation with the path it should move to.",
+      "enabled": true
+    }
+  ]
+}

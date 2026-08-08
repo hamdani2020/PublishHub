@@ -40,25 +40,25 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write pytest coverage for both backends and assert against the same schema fixture
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 3.4_
 
-- [ ] 3. API service
-- [ ] 3.1 Scaffold the API project
+- [x] 3. API service
+- [x] 3.1 Scaffold the API project
   - Create `package.json` with pinned dependencies, `tsconfig.json`, and lint config
   - Add `build`, `dev`, `test`, `lint`, and `typecheck` scripts
   - _Requirements: 2.1, 6.6_
 
-- [ ] 3.2 Implement configuration loading and structured logging
+- [x] 3.2 Implement configuration loading and structured logging
   - Parse and validate every environment variable from the configuration reference, failing fast on invalid values
   - Configure `pino` for JSON output including service name, environment, and correlation id
   - Add request-logging middleware emitting method, path, status, duration, and correlation id
   - _Requirements: 2.6, 5.5, 14.3_
 
-- [ ] 3.3 Implement health and readiness endpoints
+- [x] 3.3 Implement health and readiness endpoints
   - `/health` returns process liveness without touching dependencies
   - `/ready` checks Redis and queue reachability, returning 503 when unreachable
   - Write unit tests covering the healthy and dependency-down cases
   - _Requirements: 2.3, 2.4_
 
-- [ ] 3.4 Implement the publish endpoint with validation and the post store
+- [x] 3.4 Implement the publish endpoint with validation and the post store
   - Define the `zod` schema for `content` and `platforms` with the documented limits and allow-list
   - Implement the Redis post record store and recent-posts index
   - On success, persist the record, enqueue the job, and return `202` with id and status
@@ -66,20 +66,20 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write unit tests for valid input, each validation failure, and queue-unavailable behavior
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.5 Implement the post query endpoints
+- [x] 3.5 Implement the post query endpoints
   - `GET /api/v1/posts` returns recent posts newest-first with a capped limit
   - `GET /api/v1/posts/:id` returns one record or 404
   - Write unit tests including the empty-list and unknown-id cases
   - _Requirements: 2.5_
 
-- [ ] 3.6 Implement error handling, security middleware, and graceful shutdown
+- [x] 3.6 Implement error handling, security middleware, and graceful shutdown
   - Add a central error handler returning the generic 500 envelope while logging the full error
   - Configure `helmet`, a body size limit, and CORS from `CORS_ORIGINS`, permitting `*` only in development
   - Implement `SIGTERM` handling: stop accepting connections, drain in-flight requests, close Redis and queue clients, exit within the grace period
   - Write unit tests asserting no stack trace leaks and that shutdown completes in order
   - _Requirements: 2.7, 2.8, 2.9_
 
-- [ ] 3.7 Add metrics instrumentation behind the observability switch
+- [x] 3.7 Add metrics instrumentation behind the observability switch
   - Expose `/metrics` with the counters from the design
   - Initialize `dd-trace` only when `OBSERVABILITY_ENABLED` is true; make the metrics client a no-op otherwise
   - Inject Datadog trace context into the message envelope when tracing is active

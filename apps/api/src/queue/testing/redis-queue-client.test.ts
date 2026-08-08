@@ -8,10 +8,10 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createPublishJob, serializePublishJob } from './publish-job.js';
-import { DEFAULT_REDIS_QUEUE_KEYS, RedisQueueClient } from './redis-queue-client.js';
-import { FakeRedis } from './testing/fake-redis.js';
-import type { DeadLetterEvent, PublishJob } from './types.js';
+import { createPublishJob, serializePublishJob } from '../publish-job.js';
+import { DEFAULT_REDIS_QUEUE_KEYS, RedisQueueClient } from '../redis-queue-client.js';
+import { FakeRedis } from './fake-redis.js';
+import type { DeadLetterEvent, PublishJob } from '../types.js';
 
 const KEYS = DEFAULT_REDIS_QUEUE_KEYS;
 

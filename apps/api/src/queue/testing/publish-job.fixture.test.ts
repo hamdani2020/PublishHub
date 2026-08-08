@@ -19,9 +19,9 @@ import {
   parsePublishJob,
   serializePublishJob,
   validatePublishJob,
-} from './publish-job.js';
-import { loadPublishJobFixture } from './testing/fixture.js';
-import { SCHEMA_VERSION } from './types.js';
+} from '../publish-job.js';
+import { loadPublishJobFixture } from './fixture.js';
+import { SCHEMA_VERSION } from '../types.js';
 
 const fixture = loadPublishJobFixture();
 

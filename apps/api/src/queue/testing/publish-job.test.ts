@@ -14,8 +14,8 @@ import {
   isPlatform,
   parsePublishJob,
   serializePublishJob,
-} from './publish-job.js';
-import { SCHEMA_VERSION } from './types.js';
+} from '../publish-job.js';
+import { SCHEMA_VERSION } from '../types.js';
 
 const POST_ID = 'post_01HZX3QK7M9V4TDR8N2C5EAB6F';
 

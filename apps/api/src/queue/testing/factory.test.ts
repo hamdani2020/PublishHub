@@ -13,12 +13,12 @@ import {
   DEFAULT_REDIS_URL,
   createQueueClient,
   resolveQueueConfig,
-} from './factory.js';
-import { RedisQueueClient } from './redis-queue-client.js';
-import { SqsQueueClient } from './sqs-queue-client.js';
-import { FakeRedis } from './testing/fake-redis.js';
-import { FakeSqsPort } from './testing/fake-sqs-port.js';
-import { QueueConfigError } from './types.js';
+} from '../factory.js';
+import { RedisQueueClient } from '../redis-queue-client.js';
+import { SqsQueueClient } from '../sqs-queue-client.js';
+import { FakeRedis } from './fake-redis.js';
+import { FakeSqsPort } from './fake-sqs-port.js';
+import { QueueConfigError } from '../types.js';
 
 const QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/123456789012/publishhub-jobs';
 const DLQ_URL = 'https://sqs.us-east-1.amazonaws.com/123456789012/publishhub-jobs-dlq';

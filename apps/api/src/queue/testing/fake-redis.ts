@@ -1,16 +1,19 @@
 /**
- * In-memory stand-in for the Redis commands the queue client uses, so backend
- * tests exercise the real client code without a Redis server.
+ * In-memory stand-in for the Redis commands this service uses — the queue
+ * client's lists, the post store's hashes, and `PING` for the readiness probe —
+ * so tests exercise the real client code without a Redis server.
  *
  * List orientation matches Redis: index 0 is the head (`LPUSH` side) and the
  * last element is the tail (`RPOPLPUSH` side), which is what makes the queue
  * FIFO.
  */
 
+import type { PostStoreCommands } from '../../posts/index.js';
 import type { RedisCommands } from '../redis-queue-client.js';
 
-export class FakeRedis implements RedisCommands {
+export class FakeRedis implements RedisCommands, PostStoreCommands {
   readonly lists = new Map<string, string[]>();
+  readonly hashes = new Map<string, Record<string, string>>();
   /** Every command in order, for asserting sequences such as push-then-remove. */
   readonly calls: Array<[string, ...unknown[]]> = [];
   closed = false;
@@ -65,6 +68,15 @@ export class FakeRedis implements RedisCommands {
     return value;
   }
 
+  /** `LRANGE key start stop`: head-first, `stop` inclusive, negatives allowed. */
+  async lrange(key: string, start: number, stop: number): Promise<string[]> {
+    this.calls.push(['lrange', key, start, stop]);
+    const list = this.list(key);
+    const from = start < 0 ? Math.max(list.length + start, 0) : start;
+    const to = stop < 0 ? list.length + stop : Math.min(stop, list.length - 1);
+    return from > to ? [] : list.slice(from, to + 1);
+  }
+
   async lrem(key: string, count: number, value: string): Promise<number> {
     this.calls.push(['lrem', key, count, value]);
     const list = this.list(key);
@@ -84,6 +96,43 @@ export class FakeRedis implements RedisCommands {
   async llen(key: string): Promise<number> {
     this.calls.push(['llen', key]);
     return this.list(key).length;
+  }
+
+  /** `LTRIM key start stop`, supporting the negative indexes Redis accepts. */
+  async ltrim(key: string, start: number, stop: number): Promise<'OK'> {
+    this.calls.push(['ltrim', key, start, stop]);
+    const list = this.list(key);
+    const from = start < 0 ? Math.max(list.length + start, 0) : start;
+    const to = stop < 0 ? list.length + stop : Math.min(stop, list.length - 1);
+    const kept = from > to ? [] : list.slice(from, to + 1);
+    list.length = 0;
+    list.push(...kept);
+    return 'OK';
+  }
+
+  async hset(key: string, values: Record<string, string>): Promise<number> {
+    this.calls.push(['hset', key, values]);
+    const existing = this.hashes.get(key) ?? {};
+    const added = Object.keys(values).filter((field) => !(field in existing)).length;
+    this.hashes.set(key, { ...existing, ...values });
+    return added;
+  }
+
+  async hgetall(key: string): Promise<Record<string, string>> {
+    this.calls.push(['hgetall', key]);
+    // Redis reports a missing hash as an empty one rather than as null.
+    return { ...(this.hashes.get(key) ?? {}) };
+  }
+
+  async del(key: string): Promise<number> {
+    this.calls.push(['del', key]);
+    const removed = (this.hashes.delete(key) ? 1 : 0) + (this.lists.delete(key) ? 1 : 0);
+    return removed > 0 ? 1 : 0;
+  }
+
+  async ping(): Promise<'PONG'> {
+    this.calls.push(['ping']);
+    return 'PONG';
   }
 
   async quit(): Promise<'OK'> {
