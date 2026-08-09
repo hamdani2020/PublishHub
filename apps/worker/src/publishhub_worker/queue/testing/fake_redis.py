@@ -1,6 +1,7 @@
 """
-In-memory stand-in for the Redis commands the queue client uses, so backend tests
-exercise the real client code without a Redis server.
+In-memory stand-in for the Redis commands the worker uses — the queue client's
+lists and sorted set, and the post store's hashes — so tests exercise the real
+client code without a Redis server.
 
 List orientation matches Redis: index 0 is the head (`LPUSH` side) and the last
 element is the tail (`RPOPLPUSH` side), which is what makes the queue FIFO.
@@ -22,6 +23,7 @@ class FakeRedis:
     def __init__(self) -> None:
         self.lists: dict[str, list[str]] = {}
         self.sorted_sets: dict[str, dict[str, float]] = {}
+        self.hashes: dict[str, dict[str, str]] = {}
         #: Every command in order, for asserting sequences such as push-then-remove.
         self.calls: list[tuple[Any, ...]] = []
         self.closed = False
@@ -35,11 +37,18 @@ class FakeRedis:
     def scores(self, key: str) -> dict[str, float]:
         return dict(self._sorted_set(key))
 
+    def fields(self, key: str) -> dict[str, str]:
+        """Hash contents, the way `HGETALL key` would report them."""
+        return dict(self._hash(key))
+
     def _list(self, key: str) -> list[str]:
         return self.lists.setdefault(key, [])
 
     def _sorted_set(self, key: str) -> dict[str, float]:
         return self.sorted_sets.setdefault(key, {})
+
+    def _hash(self, key: str) -> dict[str, str]:
+        return self.hashes.setdefault(key, {})
 
     # --- list commands ---------------------------------------------------------
 
@@ -120,6 +129,26 @@ class FakeRedis:
         # Real Redis orders by score, then lexicographically by member.
         members.sort()
         return [member for _, member in members]
+
+    # --- hash commands ---------------------------------------------------------
+
+    def hset(self, name: str, *, mapping: Mapping[str, str]) -> int:
+        """
+        Field-wise merge, like `HSET key f v [f v ...]`: fields absent from
+        `mapping` keep their previous value. That is exactly why the post store
+        writes a partial hash — the worker's three fields cannot clobber the ones
+        the API wrote.
+        """
+        self.calls.append(("hset", name, dict(mapping)))
+        target = self._hash(name)
+        added = sum(1 for field_name in mapping if field_name not in target)
+        target.update(mapping)
+        return added
+
+    def hgetall(self, name: str) -> dict[str, str]:
+        self.calls.append(("hgetall", name))
+        # Redis reports a missing hash as an empty one rather than as null.
+        return dict(self._hash(name))
 
     # --- connection ------------------------------------------------------------
 

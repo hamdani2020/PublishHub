@@ -86,14 +86,14 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write a unit test asserting the app runs identically with observability disabled
   - _Requirements: 14.4, 14.6, 14.2_
 
-- [ ] 4. Worker service
-- [ ] 4.1 Scaffold the worker project
+- [x] 4. Worker service
+- [x] 4.1 Scaffold the worker project
   - Create `requirements.txt` with pinned versions and a pytest configuration
   - Implement configuration loading and validation for the worker's environment variables
   - Configure JSON structured logging with service, environment, and trace fields
   - _Requirements: 3.5, 5.5, 6.6, 14.3_
 
-- [ ] 4.2 Implement the job processing loop
+- [x] 4.2 Implement the job processing loop
   - Run the stale-entry reaper at startup for the Redis backend
   - Use blocking receive with `POLL_WAIT_SECONDS` so idle CPU stays near zero
   - Simulate per-platform publishing using `SIMULATE_LATENCY_MS` and `SIMULATE_FAILURE_RATE`
@@ -101,25 +101,25 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write pytest coverage for the success path and for idle behavior
   - _Requirements: 3.1, 3.2_
 
-- [ ] 4.3 Implement retry, dead-lettering, and startup resilience
+- [x] 4.3 Implement retry, dead-lettering, and startup resilience
   - Retry failed jobs with exponential backoff up to `MAX_ATTEMPTS`
   - Dead-letter on attempt exhaustion, on unparseable payloads, and on unknown `schema_version`
   - Retry queue connection with backoff at startup instead of crash-looping
   - Write pytest coverage for exhaustion, poison messages, and unknown schema versions
   - _Requirements: 3.3, 3.4, 3.7_
 
-- [ ] 4.4 Implement graceful shutdown
+- [x] 4.4 Implement graceful shutdown
   - Handle `SIGTERM` by setting a stop flag, finishing and acking the in-flight job, closing connections, and exiting
   - Write a test asserting a job received before `SIGTERM` is completed and acked, never lost
   - _Requirements: 3.6, 9.6_
 
-- [ ] 4.5 Add worker observability
+- [x] 4.5 Add worker observability
   - Emit the custom metrics from the design for processed, failed, duration, and queue depth
   - Extract `trace_context` from the envelope and start a child span when tracing is enabled
   - Log every outcome with post id, platform results, attempt, and duration
   - _Requirements: 3.5, 14.2, 14.4, 14.6_
 
-- [ ] 5. Web frontend
+- [~] 5. Web frontend
 - [ ] 5.1 Scaffold the React application
   - Create the Vite + React + TypeScript project with pinned dependencies and `index.html`
   - Implement runtime config reading from `window.__PUBLISHHUB_CONFIG__` with a development fallback

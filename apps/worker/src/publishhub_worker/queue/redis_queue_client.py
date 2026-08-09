@@ -41,9 +41,9 @@ from __future__ import annotations
 import dataclasses
 import math
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Protocol
+from typing import Protocol
 
 from .publish_job import describe_job, parse_publish_job, serialize_publish_job
 from .types import (

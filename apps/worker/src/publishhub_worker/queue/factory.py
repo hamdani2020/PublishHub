@@ -16,9 +16,8 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, Union
 from urllib.parse import urlsplit
 
 from .redis_queue_client import RedisCommands, RedisQueueClient, RedisQueueKeys
@@ -45,7 +44,7 @@ class SqsQueueConfig:
     backend: QueueBackend = "sqs"
 
 
-QueueConfig = Union[RedisQueueConfig, SqsQueueConfig]
+QueueConfig = RedisQueueConfig | SqsQueueConfig
 
 Env = Mapping[str, str]
 

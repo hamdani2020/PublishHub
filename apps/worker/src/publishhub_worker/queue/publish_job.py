@@ -19,7 +19,7 @@ import re
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .types import SCHEMA_VERSION, DeadLetterReason, Platform, PublishJob
@@ -249,10 +249,10 @@ def serialize_publish_job(job: PublishJob) -> str:
 
 def format_enqueued_at(moment: datetime | None = None) -> str:
     """RFC 3339 UTC with millisecond precision — the `enqueued_at` format."""
-    when = datetime.now(timezone.utc) if moment is None else moment
+    when = datetime.now(UTC) if moment is None else moment
     # A naive datetime is read as UTC rather than as local time: guessing the
     # local zone here would silently produce a wrong timestamp.
-    utc = when.replace(tzinfo=timezone.utc) if when.tzinfo is None else when.astimezone(timezone.utc)
+    utc = when.replace(tzinfo=UTC) if when.tzinfo is None else when.astimezone(UTC)
     return f"{utc:%Y-%m-%dT%H:%M:%S}.{utc.microsecond // 1000:03d}Z"
 
 

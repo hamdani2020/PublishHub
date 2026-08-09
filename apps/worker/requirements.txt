@@ -3,7 +3,32 @@
 # Versions are pinned exactly, never floating ranges, so an image built today and
 # an image built in six months contain the same code (Requirement 6.6).
 #
-# Spec task 2.3 needs only the queue clients. `ddtrace` (observability, task 4.5)
-# and `tenacity` (retry backoff, task 4.3) join this file when those tasks land.
+# Configuration loading and structured logging (spec task 4.1) add nothing here
+# on purpose: `os.environ`, `json`, and the standard library's `logging` cover
+# both, and every dependency in a container image is a dependency to scan and
+# patch.
+#
+# `ddtrace` is the APM client, and it is imported only when
+# `OBSERVABILITY_ENABLED=true` — see observability/bootstrap.py, which is the one
+# place that can load it. 4.8.2 is the first release carrying the fix for
+# CVE-2026-50271 (unbounded W3C baggage parsing on the extract path), so it is the
+# floor for this pin rather than an arbitrary current version.
+#
+# Custom metrics do *not* add a second Datadog package. dd-trace-py has no public
+# DogStatsD client — its counterpart of the API's `tracer.dogstatsd` is internal —
+# and what datadogpy would contribute is rendering `name:value|type|#tags` and
+# writing it to a UDP socket. That is `observability/metrics.py`: thirty lines,
+# unit-tested against an injected sender, and nothing extra to scan and patch.
+#
+# `tenacity`, which the design document names for backoff, deliberately does not.
+# Both places the worker backs off — the job retry and the startup connection wait
+# — are loops the code already owns, and the job retry's delay is followed by an
+# enqueue rather than a function call, because retry state lives in the message
+# envelope so it survives the worker dying mid-backoff. What tenacity would
+# contribute is `min(base * multiplier ** (attempt - 1), max_seconds)`, which is
+# implemented and unit-tested in `resilience/backoff.py` at a cost of three lines
+# instead of a pinned, scanned, patched image dependency. That module's docstring
+# carries the full rationale.
 redis==8.1.0
 boto3==1.43.67
+ddtrace==4.8.2

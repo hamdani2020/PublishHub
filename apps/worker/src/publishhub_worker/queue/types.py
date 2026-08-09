@@ -15,8 +15,9 @@ the worker is a single-job-at-a-time loop.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Literal, Protocol, Union, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 #: The only envelope version this build produces or accepts.
 SCHEMA_VERSION = 1
@@ -84,7 +85,7 @@ class SqsJobHandle:
 
 #: Backend-specific claim handle. The envelope itself never carries a receipt
 #: handle or processing-list membership: those belong to the queue client.
-JobHandle = Union[RedisJobHandle, SqsJobHandle]
+JobHandle = RedisJobHandle | SqsJobHandle
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,38 @@
+# PublishHub worker — lint and format configuration.
+#
+# One tool for both jobs, so the worker's quality gate is as short as the API's
+# `npm run lint`. `make lint-worker` runs `ruff check` only; `ruff format` is
+# available for developers who want it but is not a gate, because a formatter
+# that rewrites files is a poor fit for a check that has to be safe to run on
+# someone else's branch.
+#
+# `line-length = 100` rather than the default 88: the codebase leans on long,
+# explicit names and prose comments, and 88 forces wrapping that hurts more than
+# it helps.
+
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = [".venv"]
+
+[lint]
+# Deliberately a small set. Each one catches a class of real mistake:
+#   E, W  pycodestyle          — layout the formatter cannot fix on its own
+#   F     pyflakes             — unused imports and names, undefined references
+#   I     isort                — import order, so diffs stay small
+#   UP    pyupgrade            — syntax this project's Python floor supports
+#   B     flake8-bugbear       — mutable defaults, silent `except`, loop closures
+#   C4    flake8-comprehensions
+#   RUF   ruff's own checks
+select = ["E", "W", "F", "I", "UP", "B", "C4", "RUF"]
+
+[lint.per-file-ignores]
+# The public surface of each package is a re-export list; `__all__` documents it
+# and the names are intentionally unused inside the file itself.
+"src/publishhub_worker/**/__init__.py" = ["F401"]
+
+[lint.isort]
+known-first-party = ["publishhub_worker"]
+
+[format]
+quote-style = "double"

@@ -165,6 +165,73 @@
         "chatSessionId": "sess_fbef4ee9-a288-4c93-9549-4233ea224714",
         "timestamp": 1786221162966
       }
+    ],
+    "4.1 Scaffold the worker project": [
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786223176087
+      },
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786224808421
+      }
+    ],
+    "4.2 Implement the job processing loop": [
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786224815213
+      },
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786227055393
+      }
+    ],
+    "4.3 Implement retry, dead-lettering, and startup resilience": [
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786227062123
+      },
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786229644856
+      }
+    ],
+    "4.4 Implement graceful shutdown": [
+      {
+        "executionId": "9686d5ae-3ce6-4787-934e-b1e69e280f33",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786229651322
+      },
+      {
+        "executionId": "29740314-74bb-456b-b936-29099d3a8a8a",
+        "chatSessionId": "sess_00347b90-1395-429f-a22c-7fe689a2185f",
+        "timestamp": 1786231427968
+      }
+    ],
+    "4.5 Add worker observability": [
+      {
+        "executionId": "0422370d-ae0a-4bdd-8e3d-37d2680eb9af",
+        "chatSessionId": "sess_56d954c8-97d9-4c12-b135-804ff815d80a",
+        "timestamp": 1786231490520
+      },
+      {
+        "executionId": "0422370d-ae0a-4bdd-8e3d-37d2680eb9af",
+        "chatSessionId": "sess_56d954c8-97d9-4c12-b135-804ff815d80a",
+        "timestamp": 1786238336248
+      }
+    ],
+    "4. Worker service": [
+      {
+        "executionId": "0422370d-ae0a-4bdd-8e3d-37d2680eb9af",
+        "chatSessionId": "sess_56d954c8-97d9-4c12-b135-804ff815d80a",
+        "timestamp": 1786238336540
+      }
     ]
   }
 }

@@ -2,5 +2,9 @@
 #
 # Separate from requirements.txt so the container image never carries the test
 # toolchain (Requirement 6.2). Pinned for the same reason as the runtime pins.
+#
+# `ruff` is the worker's linter and formatter in one, configured in ruff.toml and
+# run by `make lint-worker`.
 -r requirements.txt
 pytest==9.1.1
+ruff==0.16.2

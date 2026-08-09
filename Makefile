@@ -153,12 +153,20 @@ api-port-forward: require-kubectl ## Forward the API to localhost:8081
 ##@ Quality gates
 
 .PHONY: lint
-lint: check-test-layout lint-api ## Lint every service and the Helm chart
-	@printf '\n  Worker, web, and Helm chart linting arrive with spec tasks 4.1, 5.1, and 9.5.\n\n'
+lint: check-test-layout lint-api lint-worker ## Lint every service and the Helm chart
+	@printf '\n  Web and Helm chart linting arrive with spec tasks 5.1 and 9.5.\n\n'
 
 .PHONY: lint-api
 lint-api: require-node ## Lint and typecheck the API (TypeScript)
 	@cd apps/api && npm install --no-audit --no-fund --silent && npm run lint && npm run typecheck
+
+# Same virtualenv as test-worker, so the two targets share one install.
+.PHONY: lint-worker
+lint-worker: require-python3 ## Lint the worker (Python) with ruff
+	@cd apps/worker && \
+	  { [ -d .venv ] || python3 -m venv .venv; } && \
+	  .venv/bin/pip install --quiet --disable-pip-version-check -r requirements-dev.txt && \
+	  .venv/bin/ruff check .
 
 # Same check the `.kiro/hooks/test-layout-*` hooks run, so a misplaced test file
 # fails the same way in the editor, in `make lint`, and in CI.
