@@ -119,20 +119,20 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Log every outcome with post id, platform results, attempt, and duration
   - _Requirements: 3.5, 14.2, 14.4, 14.6_
 
-- [~] 5. Web frontend
-- [ ] 5.1 Scaffold the React application
+- [x] 5. Web frontend
+- [x] 5.1 Scaffold the React application
   - Create the Vite + React + TypeScript project with pinned dependencies and `index.html`
   - Implement runtime config reading from `window.__PUBLISHHUB_CONFIG__` with a development fallback
   - _Requirements: 4.7, 6.6_
 
-- [ ] 5.2 Build the accessible composer form
+- [x] 5.2 Build the accessible composer form
   - Implement the content textarea and platform checkbox fieldset with real labels and a legend
   - Wire validation messages to inputs via `aria-describedby`
   - Ensure full keyboard operability and WCAG AA contrast in the stylesheet
   - Write Testing Library tests asserting labels, keyboard submission, and error association
   - _Requirements: 4.1, 4.6_
 
-- [ ] 5.3 Implement submission, pending, and result states
+- [x] 5.3 Implement submission, pending, and result states
   - Call the API on submit and show a queued confirmation containing the returned post id
   - Disable the button and set `aria-busy` while in flight to prevent duplicate submissions
   - Announce the result through an `aria-live="polite"` region and move focus to it
@@ -140,7 +140,7 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write tests for the pending state, success announcement, and error-preserves-draft behavior
   - _Requirements: 4.2, 4.3, 4.4, 4.6_
 
-- [ ] 5.4 Implement the recent posts list
+- [x] 5.4 Implement the recent posts list
   - Fetch and render post id, truncated content, platforms, and status as an accessible list
   - Write a test for the populated and empty states
   - _Requirements: 4.5, 4.6_

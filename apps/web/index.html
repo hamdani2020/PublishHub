@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="PublishHub — compose a post and publish it to multiple platforms." />
+    <title>PublishHub</title>
+
+    <!--
+      Runtime configuration, not build-time (Requirement 4.7).
+
+      `config.js` is a classic (non-module) script, so it executes before the
+      deferred module below and `window.__PUBLISHHUB_CONFIG__` is already set by
+      the time React mounts. In the container image the entrypoint rewrites this
+      file from environment variables (spec task 7.2), which is what lets one
+      image serve every environment without a rebuild. During `vite dev` the
+      copy in `public/` is served instead.
+    -->
+    <script src="/config.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

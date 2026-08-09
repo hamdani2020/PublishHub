@@ -1,0 +1,479 @@
+/*
+ * Stylesheet for the shell and the composer.
+ *
+ * The palette is chosen for contrast rather than taste (Requirement 4.6). Every
+ * ratio below is against #ffffff:
+ *
+ *   --color-text          #1f2933  ~13.0:1   body text, AA needs 4.5:1
+ *   --color-muted         #52606d   ~6.4:1   hint text at 0.875rem, still AA
+ *   --color-accent        #1a4f8b   ~7.6:1   links, focus ring, button fill
+ *   --color-error         #a4262c   ~7.3:1   validation messages
+ *   --color-success       #0f6845   ~6.8:1   queued confirmation
+ *   --color-warning       #8a4f00   ~6.6:1   partly-published post status
+ *   --color-input-border  #52606d   ~6.4:1   control borders, 1.4.11 needs 3:1
+ *
+ * White on --color-accent inherits the same 7.6:1, so the submit button passes in
+ * both directions. --color-border stays light because it only ever draws a
+ * decorative divider, never a control edge or text.
+ *
+ * The result panels and the recent-posts rows sit on --color-surface (#f5f7fa)
+ * rather than white, which costs about 7% of each ratio: --color-success measures
+ * ~6.3:1 there, --color-error ~6.8:1, and --color-warning ~6.1:1, all still past
+ * the 4.5:1 AA threshold. Post status text is 0.875rem, which is below the
+ * large-text exemption, so those ratios are the ones that have to hold.
+ *
+ * The disabled submit button is the one deliberate exception: it drops to
+ * --color-muted on --color-surface (~6.4:1 on white, ~5.9:1 on the surface),
+ * which still passes, because 1.4.3 exempts inactive controls but a button that
+ * says "Publishing…" is reporting state and should stay readable.
+ *
+ * Note that these ratios are the checkable part. Full WCAG conformance needs
+ * manual testing with a screen reader and expert review.
+ */
+
+:root {
+  --color-text: #1f2933;
+  --color-muted: #52606d;
+  --color-background: #ffffff;
+  --color-surface: #f5f7fa;
+  --color-border: #cbd2d9;
+  --color-input-border: #52606d;
+  --color-accent: #1a4f8b;
+  --color-accent-hover: #143d6d;
+  --color-error: #a4262c;
+  --color-success: #0f6845;
+  --color-warning: #8a4f00;
+  --space: 1rem;
+  --max-width: 44rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: calc(var(--space) * 2) var(--space);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Never remove focus indication; only replace it with something clearer. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Available to assistive technology, invisible on screen. `clip-path` with a 1px
+   box rather than `display: none` (which removes it from the accessibility tree)
+   or `width: 0` (which some screen readers skip). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.app {
+  margin: 0 auto;
+  max-width: var(--max-width);
+}
+
+.app__header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.app__tagline {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+}
+
+.app__main {
+  margin-top: calc(var(--space) * 1.5);
+}
+
+.app__footer {
+  margin-top: calc(var(--space) * 2);
+  padding-top: var(--space);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+code {
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  background-color: var(--color-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ----------------------------------------------------------------------------
+ * Composer
+ *
+ * Nothing here hides or restyles a control's interactive affordances: the
+ * checkboxes are native and unstyled apart from size, so focus, hover, and the
+ * checked state come from the platform. Sizes are in rem so the layout follows
+ * the user's font-size preference instead of overriding it.
+ * ------------------------------------------------------------------------- */
+
+.composer__heading {
+  margin: 0 0 var(--space);
+  font-size: 1.25rem;
+}
+
+.composer__field {
+  margin-bottom: calc(var(--space) * 1.5);
+}
+
+.composer__label,
+.composer__legend {
+  display: block;
+  padding: 0;
+  font-weight: 600;
+}
+
+.composer__hint {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.composer__textarea {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  /* Inputs inherit the page font at full size: 16px or larger also stops iOS
+     Safari zooming on focus. */
+  font: inherit;
+  resize: vertical;
+}
+
+/* Invalid state is a border weight plus the message below, never colour alone
+   (WCAG 1.4.1: colour must not be the only carrier of meaning). */
+.composer__textarea[aria-invalid='true'] {
+  border-width: 2px;
+  border-color: var(--color-error);
+}
+
+.composer__error {
+  margin: 0.375rem 0 0;
+  color: var(--color-error);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.composer__fieldset {
+  margin: 0 0 calc(var(--space) * 1.5);
+  padding: var(--space);
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+}
+
+.composer__platforms {
+  margin: 0;
+  padding: 0;
+  /* A real <ul> for the group, with the marker dropped: assistive technology
+     still hears "4 items", sighted users see checkboxes. */
+  list-style: none;
+}
+
+.composer__platform {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* A comfortable target height without touching the checkbox's own hit area. */
+  min-height: 2rem;
+}
+
+.composer__checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  /* Ensures the native control is drawn with the accent colour where supported,
+     which keeps the checked state visible in forced-colours and dark modes. */
+  accent-color: var(--color-accent);
+}
+
+.composer__checkbox-label {
+  /* The whole label is clickable, which is a bigger target than the box alone. */
+  cursor: pointer;
+}
+
+.composer__submit {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: var(--color-accent);
+  color: var(--color-background);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer__submit:hover {
+  background-color: var(--color-accent-hover);
+}
+
+/* Pending: the label already changed to "Publishing…", so the styling only has to
+   stop looking clickable. `not-allowed` rather than `wait`, because the pointer is
+   not waiting for the page, it is being refused. */
+.composer__submit:disabled {
+  border-color: var(--color-input-border);
+  background-color: var(--color-surface);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+.composer__submit:disabled:hover {
+  background-color: var(--color-surface);
+}
+
+/* Forced-colours (Windows high contrast) drops background colours, so the button
+   would lose its edge. A visible border restores it. */
+@media (forced-colors: active) {
+  .composer__submit {
+    border-color: ButtonText;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * Submission result
+ *
+ * The wrapper is always in the DOM — a live region has to exist before its
+ * content changes — so it must take no space while empty. `:empty` handles that
+ * without a conditional class: no margin until there is something to report.
+ * ------------------------------------------------------------------------- */
+
+.submission {
+  margin-bottom: calc(var(--space) * 1.5);
+}
+
+.submission:empty {
+  margin-bottom: 0;
+}
+
+.submission__result {
+  padding: 0.75rem var(--space);
+  border-radius: 4px;
+  /* The status colour is carried by the accent bar *and* the headline text, never
+     by colour alone: the headline says "Post queued" or "Post not queued"
+     (WCAG 1.4.1). */
+  border-left: 4px solid;
+  background-color: var(--color-surface);
+}
+
+.submission__result--queued {
+  border-left-color: var(--color-success);
+}
+
+.submission__result--error {
+  border-left-color: var(--color-error);
+}
+
+.submission__headline {
+  margin: 0;
+  font-weight: 600;
+}
+
+.submission__result--queued .submission__headline {
+  color: var(--color-success);
+}
+
+.submission__result--error .submission__headline {
+  color: var(--color-error);
+}
+
+.submission__detail {
+  margin: 0.375rem 0 0;
+}
+
+/* The result takes focus when it appears, so it needs a focus indicator of its
+   own; the global :focus-visible rule does not fire for programmatic focus on a
+   tabindex="-1" element in every browser. */
+.submission__result:focus {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------------
+ * Recent posts
+ *
+ * The rows are a real <ul> of <li>, each holding a <dl>, so the markup carries
+ * the labels and the count. The layout only arranges what is already there:
+ * `list-style: none` drops the marker, and the definition rows become a two
+ * column grid on wide viewports and stack on narrow ones. Nothing is positioned
+ * out of document order, so the visual order and the reading order stay the same
+ * (WCAG 1.3.2).
+ * ------------------------------------------------------------------------- */
+
+.posts {
+  margin-top: calc(var(--space) * 2);
+  padding-top: var(--space);
+  border-top: 1px solid var(--color-border);
+}
+
+.posts__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space);
+  flex-wrap: wrap;
+}
+
+.posts__heading {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.posts__refresh {
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  background-color: var(--color-background);
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.posts__refresh:hover {
+  background-color: var(--color-surface);
+}
+
+.posts__refresh:disabled {
+  border-color: var(--color-input-border);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+/* The panel's state sentence: "Loading…", "No posts yet…", "Showing 3…", or the
+   failure message. Always present, because it is the live region. */
+.posts__status {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.posts__reference {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.posts__list {
+  margin: var(--space) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.posts__item {
+  padding: 0.75rem var(--space);
+  border-radius: 4px;
+  /* Status is a tint on the edge *and* the word in the Status row, never colour
+     alone (WCAG 1.4.1). */
+  border-left: 4px solid var(--color-muted);
+  background-color: var(--color-surface);
+}
+
+.posts__item--pending {
+  border-left-color: var(--color-muted);
+}
+
+.posts__item--success {
+  border-left-color: var(--color-success);
+}
+
+.posts__item--warning {
+  border-left-color: var(--color-warning);
+}
+
+.posts__item--error {
+  border-left-color: var(--color-error);
+}
+
+.posts__fields {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.posts__field {
+  display: grid;
+  /* The term column is sized to the longest label so the values line up without
+     a table; `auto` on narrow screens is handled by the query below. */
+  grid-template-columns: 6rem 1fr;
+  gap: 0.5rem;
+}
+
+.posts__term {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.posts__value {
+  margin: 0;
+  /* A long id or an unbroken preview must not widen the panel past the viewport. */
+  overflow-wrap: anywhere;
+}
+
+.posts__field--content .posts__value {
+  font-size: 0.9375rem;
+}
+
+.posts__value--status {
+  font-weight: 600;
+}
+
+.posts__item--success .posts__value--status {
+  color: var(--color-success);
+}
+
+.posts__item--warning .posts__value--status {
+  color: var(--color-warning);
+}
+
+.posts__item--error .posts__value--status {
+  color: var(--color-error);
+}
+
+/* Below the two-column threshold the label sits above its value rather than
+   squeezing both into a phone-width row. */
+@media (max-width: 28rem) {
+  .posts__field {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* Forced-colours drops the background and the tinted edge, so the row would lose
+   its boundary. A full border restores it. */
+@media (forced-colors: active) {
+  .posts__item {
+    border: 1px solid CanvasText;
+    border-left-width: 4px;
+  }
+}

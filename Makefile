@@ -153,12 +153,16 @@ api-port-forward: require-kubectl ## Forward the API to localhost:8081
 ##@ Quality gates
 
 .PHONY: lint
-lint: check-test-layout lint-api lint-worker ## Lint every service and the Helm chart
-	@printf '\n  Web and Helm chart linting arrive with spec tasks 5.1 and 9.5.\n\n'
+lint: check-test-layout lint-api lint-web lint-worker ## Lint every service and the Helm chart
+	@printf '\n  Helm chart linting arrives with spec task 9.5.\n\n'
 
 .PHONY: lint-api
 lint-api: require-node ## Lint and typecheck the API (TypeScript)
 	@cd apps/api && npm install --no-audit --no-fund --silent && npm run lint && npm run typecheck
+
+.PHONY: lint-web
+lint-web: require-node ## Lint and typecheck the web frontend (TypeScript)
+	@cd apps/web && npm install --no-audit --no-fund --silent && npm run lint && npm run typecheck
 
 # Same virtualenv as test-worker, so the two targets share one install.
 .PHONY: lint-worker
@@ -175,12 +179,17 @@ check-test-layout: ## Fail if any test file sits beside production source
 	@bash scripts/check-test-layout.sh
 
 .PHONY: test
-test: test-api test-worker ## Run unit and integration tests for every service
-	@printf '\n  Web and integration suites arrive with spec tasks 5.x and 6.2.\n\n'
+test: test-api test-web test-worker ## Run unit and integration tests for every service
+	@printf '\n  The end-to-end integration suite arrives with spec task 6.2.\n\n'
 
 .PHONY: test-api
 test-api: require-node ## Run the API (TypeScript) unit tests
 	@cd apps/api && npm install --no-audit --no-fund --silent && npm test
+
+# jsdom + Testing Library, no network and no API required.
+.PHONY: test-web
+test-web: require-node ## Run the web frontend (TypeScript) unit tests
+	@cd apps/web && npm install --no-audit --no-fund --silent && npm test
 
 # The virtualenv lives in apps/worker/.venv and is gitignored. Both suites read
 # the shared contract fixture in contracts/, so a schema change fails here in
