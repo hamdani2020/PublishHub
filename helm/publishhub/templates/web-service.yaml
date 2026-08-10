@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "web") }}
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "web") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.web.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "publishhub.selectorLabels" (dict "context" . "component" "web") | nindent 4 }}

@@ -1,0 +1,55 @@
+suite: KEDA ScaledObject trigger selection
+templates:
+  - templates/worker-keda.yaml
+tests:
+  - it: renders redis trigger when queue.backend is redis
+    set:
+      worker.keda.enabled: true
+      queue.backend: redis
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ScaledObject
+      - equal:
+          path: spec.triggers[0].type
+          value: redis
+      - equal:
+          path: spec.triggers[0].metadata.listName
+          value: "publishhub:jobs"
+
+  - it: renders aws-sqs-queue trigger with authenticationRef when queue.backend is sqs
+    set:
+      worker.keda.enabled: true
+      queue.backend: sqs
+      sqs.queueUrl: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
+      sqs.region: "us-east-1"
+    asserts:
+      - isKind:
+          of: ScaledObject
+        documentIndex: 0
+      - equal:
+          path: spec.triggers[0].type
+          value: aws-sqs-queue
+        documentIndex: 0
+      - isNotNull:
+          path: spec.triggers[0].authenticationRef
+        documentIndex: 0
+
+  - it: renders TriggerAuthentication for SQS backend
+    set:
+      worker.keda.enabled: true
+      queue.backend: sqs
+      sqs.queueUrl: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
+      sqs.region: "us-east-1"
+    asserts:
+      - isKind:
+          of: TriggerAuthentication
+        documentIndex: 1
+
+  - it: does NOT render ScaledObject when keda is disabled
+    set:
+      worker.keda.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

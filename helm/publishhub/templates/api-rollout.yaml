@@ -1,0 +1,120 @@
+{{- if .Values.api.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "publishhub.selectorLabels" (dict "context" . "component" "api") | nindent 6 }}
+  strategy:
+    canary:
+      canaryService: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-canary
+      stableService: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-stable
+      steps:
+        - setWeight: 10
+        - pause: {}
+        - setWeight: 25
+        - pause:
+            duration: 30s
+        - setWeight: 50
+        - pause:
+            duration: 30s
+  template:
+    metadata:
+      labels:
+        {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "publishhub.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: api
+          image: {{ include "publishhub.image" (dict "image" .Values.api.image "tag" .Values.global.image.tag) }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.api.port | quote }}
+            - name: NODE_ENV
+              value: {{ .Values.api.env.NODE_ENV | quote }}
+            - name: CORS_ORIGINS
+              value: {{ .Values.api.env.CORS_ORIGINS | quote }}
+            - name: QUEUE_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: QUEUE_BACKEND
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: REDIS_URL
+            {{- if eq .Values.queue.backend "sqs" }}
+            - name: SQS_QUEUE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: SQS_QUEUE_URL
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: SQS_REGION
+            {{- end }}
+            - name: OBSERVABILITY_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: OBSERVABILITY_ENABLED
+            {{- if .Values.observability.enabled }}
+            - name: DD_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: DD_ENV
+            - name: DD_SERVICE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: DD_SERVICE
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-datadog
+                  key: api-key
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+{{- end }}

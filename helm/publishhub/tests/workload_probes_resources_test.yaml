@@ -1,0 +1,78 @@
+suite: Workload probes and resource limits
+templates:
+  - templates/api-deployment.yaml
+  - templates/worker-deployment.yaml
+  - templates/web-deployment.yaml
+  - templates/redis.yaml
+tests:
+  # --- Resource requests and limits ---
+  - it: API deployment has resource requests and limits
+    template: templates/api-deployment.yaml
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.requests
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.limits
+
+  - it: worker deployment has resource requests and limits
+    template: templates/worker-deployment.yaml
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.requests
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.limits
+
+  - it: web deployment has resource requests and limits
+    template: templates/web-deployment.yaml
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.requests
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.limits
+
+  - it: redis deployment has resource requests and limits
+    template: templates/redis.yaml
+    documentIndex: 0
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.requests
+      - isNotNull:
+          path: spec.template.spec.containers[0].resources.limits
+
+  # --- Probes ---
+  - it: API deployment has httpGet liveness and readiness probes
+    template: templates/api-deployment.yaml
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+      - isNotNull:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+
+  - it: web deployment has httpGet liveness and readiness probes
+    template: templates/web-deployment.yaml
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+      - isNotNull:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+
+  - it: redis deployment has exec liveness and readiness probes
+    template: templates/redis.yaml
+    documentIndex: 0
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].livenessProbe.exec
+      - isNotNull:
+          path: spec.template.spec.containers[0].readinessProbe.exec
+
+  - it: worker deployment does NOT have probes (queue consumer)
+    template: templates/worker-deployment.yaml
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+      - isNull:
+          path: spec.template.spec.containers[0].readinessProbe

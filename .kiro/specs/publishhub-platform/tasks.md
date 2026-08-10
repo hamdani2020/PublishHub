@@ -186,185 +186,185 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Verify a repeated `cluster-up` succeeds without duplication and that `clean` leaves no orphaned resources
   - _Requirements: 1.3, 1.5_
 
-- [ ] 9. Helm chart
-- [ ] 9.1 Create the chart skeleton, helpers, and values files
+- [x] 9. Helm chart
+- [x] 9.1 Create the chart skeleton, helpers, and values files
   - Write `Chart.yaml`, `_helpers.tpl` for names, labels, selectors, and image references
   - Write `values.yaml` for kind defaults and `values-production.yaml` for ECR, SQS, and Datadog
   - Use `required` for values that have no safe default
   - _Requirements: 7.3, 7.5_
 
-- [ ] 9.2 Template the API, worker, web, and Redis workloads
+- [x] 9.2 Template the API, worker, web, and Redis workloads
   - Render Deployments and Services for all three services plus the Redis workload
   - Give every workload resource requests and limits, probes on the real endpoints, a hardened security context, and an appropriate termination grace period
   - Reference Secrets by name only; never inline secret values
   - _Requirements: 7.1, 7.2, 7.6_
 
-- [ ] 9.3 Template the KEDA ScaledObject with backend-aware triggers
+- [x] 9.3 Template the KEDA ScaledObject with backend-aware triggers
   - Render the `redis` trigger or the `aws-sqs-queue` trigger with an IRSA authentication reference based on `queue.backend`
   - Parameterize min and max replicas, polling interval, cooldown, and target queue length
   - _Requirements: 9.5, 7.3_
 
-- [ ] 9.4 Template the API Rollout as a mutually exclusive alternative to the Deployment
+- [x] 9.4 Template the API Rollout as a mutually exclusive alternative to the Deployment
   - Render either `api-deployment.yaml` or `api-rollout.yaml` based on `api.rollout.enabled`, never both
   - Add the canary and stable Services, and point the HPA's `scaleTargetRef` at the Rollout when it is active
   - _Requirements: 10.6, 7.1_
 
-- [ ] 9.5 Add chart tests and lint verification
+- [x] 9.5 Add chart tests and lint verification
   - Write helm unittest cases asserting Deployment/Rollout exclusivity, probes and limits on every workload, and correct trigger selection per backend
   - Verify `helm lint` and `helm template` pass for the default and production values files
   - _Requirements: 7.4, 7.2, 10.6_
 
-- [ ] 10. Platform layer and GitOps
-- [ ] 10.1 Implement the platform-install target
+- [~] 10. Platform layer and GitOps
+- [~] 10.1 Implement the platform-install target
   - Install ArgoCD, KEDA, and Argo Rollouts into their own namespaces with pinned chart or manifest versions
   - Wait for each component's readiness before returning
   - Verify all expected pods reach Running in `argocd`, `keda`, and `argo-rollouts`
   - _Requirements: 8.1_
 
-- [ ] 10.2 Write the ArgoCD Project and Application manifests
+- [~] 10.2 Write the ArgoCD Project and Application manifests
   - Define the AppProject restricting source repositories, destination namespaces, and cluster-scoped resource kinds
   - Write `bootstrap.yaml` following App of Apps and the `publishhub` Application with automated sync, self-heal, and prune
   - Thread the repository URL through a single configurable location
   - _Requirements: 8.2, 8.3, 8.4, 8.7_
 
-- [ ] 10.3 Implement the sync, access, and credential targets
+- [~] 10.3 Implement the sync, access, and credential targets
   - Implement `argocd-sync` applying the bootstrap Application, plus the port-forward targets for ArgoCD, web, and API
   - Implement `argocd-password` reading the initial admin secret without writing it to a tracked file
   - Verify both Applications appear, all `publishhub` pods run, and the ScaledObject exists
   - _Requirements: 8.2, 8.3, 8.6_
 
-- [ ] 10.4 Write the post-deploy smoke test script
+- [~] 10.4 Write the post-deploy smoke test script
   - Assert every pod is ready, the ScaledObject is ready, `/health` returns 200, and one submitted post reaches a terminal status
   - Verify self-healing by mutating a live resource and confirming ArgoCD restores it
   - _Requirements: 8.5, 9.1_
 
 - [ ] 11. Autoscaling verification
-- [ ] 11.1 Write the load generation script
+- [~] 11.1 Write the load generation script
   - Submit a configurable burst of publish requests against the port-forwarded API
   - _Requirements: 9.7_
 
-- [ ] 11.2 Write the scaling verification script
+- [~] 11.2 Write the scaling verification script
   - Assert workers sit at zero when idle, scale above one replica under the burst, and return to minimum after the queue drains
   - Assert no job is lost or duplicated across a scale-down, and surface HPA, ScaledObject, and KEDA operator state on failure
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 9.7_
 
 - [ ] 12. Progressive delivery
-- [ ] 12.1 Configure the canary strategy and analysis
+- [~] 12.1 Configure the canary strategy and analysis
   - Implement the six-step weight and pause sequence from the design
   - Add the Datadog-backed `AnalysisTemplate` with a local job-based fallback probe, wired so a failing check auto-aborts
   - _Requirements: 10.1, 10.2, 10.4_
 
-- [ ] 12.2 Write the rollout exercise script
+- [~] 12.2 Write the rollout exercise script
   - Build and push a `v2` API image, set it on the Rollout, and report step, weights, and per-version images
   - Cover both promote and abort paths, asserting abort returns all traffic to stable
   - _Requirements: 10.2, 10.3, 10.5_
 
 - [ ] 13. Developer CLI
-- [ ] 13.1 Scaffold the CLI package
+- [~] 13.1 Scaffold the CLI package
   - Create `setup.py` with the `publishctl` entry point and pinned `click` and `rich` dependencies
   - Implement the subprocess helper using argument lists, surfacing exit codes and stderr
   - _Requirements: 11.1, 11.8, 11.9_
 
-- [ ] 13.2 Implement the doctor and environment commands
+- [~] 13.2 Implement the doctor and environment commands
   - `doctor` verifies each prerequisite and reports the missing tool with its install command
   - `env start` and `env stop` orchestrate the full lifecycle with per-stage progress
   - _Requirements: 11.2, 11.3, 11.8, 1.6_
 
-- [ ] 13.3 Implement the operational commands
+- [~] 13.3 Implement the operational commands
   - `status` summarizes cluster, Application, pod, and ScaledObject state
   - `logs` streams a service's logs with tail and follow options
   - `publish` submits a post through the API and prints the response
   - `scale` and `rollout status|promote|abort` wrap their respective operations
   - _Requirements: 11.4, 11.5, 11.6_
 
-- [ ] 13.4 Verify installation and help output
+- [~] 13.4 Verify installation and help output
   - Install with `pip install -e .`, confirm `publishctl` resolves on PATH, and confirm `--help` lists every command
   - _Requirements: 11.1, 11.9_
 
 - [ ] 14. AI incident analyzer
-- [ ] 14.1 Implement diagnostic collection with redaction
+- [~] 14.1 Implement diagnostic collection with redaction
   - Collect pod description, recent logs, previous-container logs, and related events, recording rather than aborting on individual `kubectl` failures
   - Implement the secret redaction pass over all collected text before any transmission
   - Truncate each section to its documented character budget
   - Write unit tests for redaction patterns, truncation bounds, and the kubectl-failure path
   - _Requirements: 12.1, 12.5, 12.6_
 
-- [ ] 14.2 Implement Bedrock analysis with mapped error handling
+- [~] 14.2 Implement Bedrock analysis with mapped error handling
   - Invoke Claude 3 Haiku with the structured SRE prompt requesting summary, ranked hypotheses, fix, severity, and category
   - Authenticate through the ambient AWS credential chain with no repository-stored key
   - Map each Bedrock and credential error to its actionable diagnostic and exit non-zero
   - _Requirements: 12.2, 12.4, 12.7_
 
-- [ ] 14.3 Implement report output and CLI integration
+- [~] 14.3 Implement report output and CLI integration
   - Render the formatted text report and implement the JSON output mode
   - Add the `publishctl incident` command delegating to the analyzer
   - Verify against a deliberately crashed pod that the report is produced end to end
   - _Requirements: 12.3, 11.7_
 
 - [ ] 15. AWS infrastructure as code
-- [ ] 15.1 Write the VPC and EKS modules
+- [~] 15.1 Write the VPC and EKS modules
   - VPC with public and private subnets across three AZs and a single NAT gateway
   - EKS with managed node groups defaulting to Spot capacity and ARM instance types, with the OIDC provider enabled
   - _Requirements: 13.1, 13.3_
 
-- [ ] 15.2 Write the SQS, ECR, and IAM modules
+- [~] 15.2 Write the SQS, ECR, and IAM modules
   - SQS main queue plus DLQ with a redrive policy
   - One ECR repository per service with a lifecycle policy expiring untagged and surplus images
   - Least-privilege IRSA roles for the KEDA SQS scaler and the worker, plus the GitHub OIDC role, with no long-lived keys
   - _Requirements: 13.1, 13.2, 13.3_
 
-- [ ] 15.3 Compose the root configuration, outputs, and backend example
+- [~] 15.3 Compose the root configuration, outputs, and backend example
   - Wire the modules in `main.tf` with variables and version constraints
   - Output cluster name, region, ECR repository URLs, and the SQS queue URL
   - Provide `backend.tf.example` for S3 state with DynamoDB locking, and confirm state and tfvars are gitignored
   - Verify `terraform fmt -check` and `terraform validate` pass
   - _Requirements: 13.4, 13.5, 13.7_
 
-- [ ] 15.4 Document the apply and destroy procedure **[manual]**
+- [~] 15.4 Document the apply and destroy procedure **[manual]**
   - Write the AWS deployment runbook covering plan review, apply, `aws eks update-kubeconfig`, and production values
   - State the daily cost estimate and make `terraform destroy` a prominent, explicit teardown step
   - Do not add any make target or CI job that applies or destroys without confirmation
   - _Requirements: 13.6, 13.8, 16.3_
 
 - [ ] 16. Observability
-- [ ] 16.1 Write the Datadog agent configuration
+- [~] 16.1 Write the Datadog agent configuration
   - Provide the agent values enabling cluster metrics, log collection, and APM for the `publishhub` namespace
   - Supply credentials through a Kubernetes Secret reference, never a committed file
   - _Requirements: 14.1, 14.7_
 
-- [ ] 16.2 Verify distributed tracing across the API and worker
+- [~] 16.2 Verify distributed tracing across the API and worker
   - Confirm a publish request produces a single trace spanning the API handler and the worker's processing of that job
   - Confirm logs carry trace identifiers so log-trace correlation works
   - _Requirements: 14.2, 14.3_
 
-- [ ] 16.3 Define monitors and a dashboard as code
+- [~] 16.3 Define monitors and a dashboard as code
   - Write `monitors.yaml` for API error rate, worker failure rate, queue depth growth, pod crash looping, and workers stuck at zero with a non-empty queue
   - Write the dashboard definition covering request rate, latency, queue depth, and worker replica count
   - _Requirements: 14.5_
 
 - [ ] 17. CI/CD
-- [ ] 17.1 Write the CI workflow
+- [~] 17.1 Write the CI workflow
   - Run lint, typecheck, and unit tests per service; `helm lint` and `template` per values file; `terraform fmt -check` and `validate`
   - Build images without pushing on pull requests and scan them with Trivy, failing on critical findings
   - _Requirements: 15.1, 15.6_
 
-- [ ] 17.2 Write the deploy workflow
+- [~] 17.2 Write the deploy workflow
   - Add a preflight step asserting every required secret and variable is present, failing with the missing name
   - Assume the AWS role via OIDC, then build and push all three images to ECR tagged with the commit SHA
   - Update the Helm values image tags with `yq` and commit back, guarded against triggering an infinite build loop
   - _Requirements: 15.2, 15.3, 15.4, 15.5, 15.7_
 
 - [ ] 18. Documentation
-- [ ] 18.1 Write the README and architecture document
+- [~] 18.1 Write the README and architecture document
   - Cover architecture, technology rationale, quick start, the demo flow, and the explicit statement that the API is unauthenticated
   - _Requirements: 16.1, 2.9_
 
-- [ ] 18.2 Write the local development guide and verify it from clean
+- [~] 18.2 Write the local development guide and verify it from clean
   - Document every step from prerequisites to a running stack, then follow it end to end and correct any undocumented action
   - Verify all referenced commands, make targets, and paths match the repository
   - _Requirements: 16.2, 16.4_
 
-- [ ] 18.3 Write the operational runbooks
+- [~] 18.3 Write the operational runbooks
   - Cover queue backlog, worker crash looping, failed ArgoCD sync, failed canary rollout, and Bedrock access denial
   - Add secret-handling guidance to the contributing documentation
   - _Requirements: 16.3, 16.5_

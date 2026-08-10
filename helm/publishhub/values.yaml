@@ -1,0 +1,131 @@
+# PublishHub Helm Chart - Local/Kind defaults
+# Override these values per environment using values-production.yaml or custom files.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Global image settings
+global:
+  image:
+    # Default tag applied when a component does not specify its own tag.
+    # Set to a Git SHA in CI for immutable deploys.
+    tag: "latest"
+
+# --- API Service ---
+api:
+  image:
+    repository: localhost:5001/publishhub-api
+    tag: ""  # falls back to global.image.tag
+  replicaCount: 1
+  port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  env:
+    NODE_ENV: development
+    CORS_ORIGINS: "http://localhost:3000"
+  # Rollout (Argo Rollouts) toggle. When true, api-rollout.yaml is rendered
+  # instead of api-deployment.yaml.
+  rollout:
+    enabled: false
+  # HPA settings
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+# --- Worker Service ---
+worker:
+  image:
+    repository: localhost:5001/publishhub-worker
+    tag: ""  # falls back to global.image.tag
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  env:
+    MAX_ATTEMPTS: "3"
+    POLL_WAIT_SECONDS: "20"
+    SIMULATE_LATENCY_MS: "500"
+    SIMULATE_FAILURE_RATE: "0"
+  terminationGracePeriodSeconds: 60
+  # KEDA ScaledObject configuration
+  keda:
+    enabled: true
+    minReplicaCount: 0
+    maxReplicaCount: 10
+    pollingInterval: 15
+    cooldownPeriod: 60
+    # Threshold: number of messages per replica before scaling up
+    listLength: "10"
+
+# --- Web Frontend ---
+web:
+  image:
+    repository: localhost:5001/publishhub-web
+    tag: ""  # falls back to global.image.tag
+  replicaCount: 1
+  port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  env:
+    API_BASE_URL: "/api"
+
+# --- Queue Configuration ---
+queue:
+  # Backend: "redis" or "sqs"
+  backend: redis
+
+# --- Redis ---
+redis:
+  # In-cluster Redis for local development and post state storage
+  enabled: true
+  url: "redis://publishhub-redis:6379"
+  image:
+    repository: redis
+    tag: "7.2-alpine"
+  port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# --- SQS (only used when queue.backend == sqs) ---
+sqs:
+  # queueUrl is required when queue.backend is sqs.
+  # The chart uses {{ required }} to fail fast if this is unset in sqs mode.
+  queueUrl: ""
+  region: "us-east-1"
+
+# --- Observability ---
+observability:
+  enabled: false
+  datadog:
+    env: ""
+    service: "publishhub"
+    version: ""
+
+# --- Service Account ---
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  # In production, add IRSA annotation:
+  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/NAME

@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "publishhub.selectorLabels" (dict "context" . "component" "api") | nindent 4 }}
+{{- if .Values.api.rollout.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-canary
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "publishhub.selectorLabels" (dict "context" . "component" "api") | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-stable
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "publishhub.selectorLabels" (dict "context" . "component" "api") | nindent 4 }}
+{{- end }}

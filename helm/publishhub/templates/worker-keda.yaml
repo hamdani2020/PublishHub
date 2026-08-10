@@ -1,0 +1,46 @@
+{{- if .Values.worker.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "worker") }}
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "worker") | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "publishhub.componentFullname" (dict "context" . "component" "worker") }}
+  minReplicaCount: {{ .Values.worker.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.worker.keda.maxReplicaCount }}
+  pollingInterval: {{ .Values.worker.keda.pollingInterval }}
+  cooldownPeriod: {{ .Values.worker.keda.cooldownPeriod }}
+  triggers:
+    {{- if eq .Values.queue.backend "redis" }}
+    - type: redis
+      metadata:
+        addressFromEnv: REDIS_URL
+        listName: "publishhub:jobs"
+        listLength: {{ .Values.worker.keda.listLength | quote }}
+    {{- end }}
+    {{- if eq .Values.queue.backend "sqs" }}
+    - type: aws-sqs-queue
+      metadata:
+        queueURL: {{ required "sqs.queueUrl is required when queue.backend is sqs" .Values.sqs.queueUrl | quote }}
+        queueLength: {{ .Values.worker.keda.listLength | quote }}
+        awsRegion: {{ .Values.sqs.region | quote }}
+      authenticationRef:
+        name: {{ include "publishhub.fullname" . }}-keda-aws-irsa
+    {{- end }}
+---
+{{- if eq .Values.queue.backend "sqs" }}
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ include "publishhub.fullname" . }}-keda-aws-irsa
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "worker") | nindent 4 }}
+spec:
+  podIdentity:
+    provider: aws-eks
+    identityOwner: operator
+  {{- /* The KEDA operator uses the service account's IRSA annotation for AWS credentials */}}
+{{- end }}
+{{- end }}

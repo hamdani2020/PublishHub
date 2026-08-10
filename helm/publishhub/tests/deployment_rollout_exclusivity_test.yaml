@@ -1,0 +1,48 @@
+suite: Deployment/Rollout exclusivity
+templates:
+  - templates/api-deployment.yaml
+  - templates/api-rollout.yaml
+tests:
+  - it: renders Deployment and NOT Rollout when rollout is disabled (default)
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - template: templates/api-deployment.yaml
+        isKind:
+          of: Deployment
+      - template: templates/api-rollout.yaml
+        hasDocuments:
+          count: 0
+
+  - it: renders Rollout and NOT Deployment when rollout is enabled
+    set:
+      api.rollout.enabled: true
+    asserts:
+      - template: templates/api-rollout.yaml
+        isKind:
+          of: Rollout
+      - template: templates/api-deployment.yaml
+        hasDocuments:
+          count: 0
+
+  - it: never renders both Deployment and Rollout at the same time (rollout disabled)
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - template: templates/api-deployment.yaml
+        hasDocuments:
+          count: 1
+      - template: templates/api-rollout.yaml
+        hasDocuments:
+          count: 0
+
+  - it: never renders both Deployment and Rollout at the same time (rollout enabled)
+    set:
+      api.rollout.enabled: true
+    asserts:
+      - template: templates/api-rollout.yaml
+        hasDocuments:
+          count: 1
+      - template: templates/api-deployment.yaml
+        hasDocuments:
+          count: 0

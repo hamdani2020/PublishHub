@@ -1,0 +1,12 @@
+apiVersion: v2
+name: publishhub
+description: PublishHub - social media publishing platform with queue-based processing
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - publishhub
+  - publishing
+  - queue
+maintainers:
+  - name: PublishHub Team

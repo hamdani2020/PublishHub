@@ -1,0 +1,42 @@
+suite: HPA configuration
+templates:
+  - templates/api-hpa.yaml
+tests:
+  - it: targets Rollout when both autoscaling and rollout are enabled
+    set:
+      api.autoscaling.enabled: true
+      api.rollout.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Rollout
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: argoproj.io/v1alpha1
+
+  - it: targets Deployment when autoscaling is enabled and rollout is disabled
+    set:
+      api.autoscaling.enabled: true
+      api.rollout.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Deployment
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: apps/v1
+
+  - it: does NOT render HPA when autoscaling is disabled
+    set:
+      api.autoscaling.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

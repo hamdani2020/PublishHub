@@ -1,0 +1,82 @@
+suite: Security context enforcement
+templates:
+  - templates/api-deployment.yaml
+  - templates/worker-deployment.yaml
+  - templates/web-deployment.yaml
+  - templates/redis.yaml
+tests:
+  # --- Pod-level runAsNonRoot ---
+  - it: API pod has runAsNonRoot true
+    template: templates/api-deployment.yaml
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+
+  - it: worker pod has runAsNonRoot true
+    template: templates/worker-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+
+  - it: web pod has runAsNonRoot true
+    template: templates/web-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+
+  - it: redis pod has runAsNonRoot true
+    template: templates/redis.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+
+  # --- Container-level allowPrivilegeEscalation and drop ALL ---
+  - it: API container has allowPrivilegeEscalation false and drops ALL capabilities
+    template: templates/api-deployment.yaml
+    set:
+      api.rollout.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: worker container has allowPrivilegeEscalation false and drops ALL capabilities
+    template: templates/worker-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: web container has allowPrivilegeEscalation false and drops ALL capabilities
+    template: templates/web-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: redis container has allowPrivilegeEscalation false and drops ALL capabilities
+    template: templates/redis.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL

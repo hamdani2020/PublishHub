@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "worker") }}
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "worker") | nindent 4 }}
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "publishhub.selectorLabels" (dict "context" . "component" "worker") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "publishhub.componentLabels" (dict "context" . "component" "worker") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "publishhub.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: worker
+          image: {{ include "publishhub.image" (dict "image" .Values.worker.image "tag" .Values.global.image.tag) }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: QUEUE_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: QUEUE_BACKEND
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: REDIS_URL
+            {{- if eq .Values.queue.backend "sqs" }}
+            - name: SQS_QUEUE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: SQS_QUEUE_URL
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: SQS_REGION
+            {{- end }}
+            - name: MAX_ATTEMPTS
+              value: {{ .Values.worker.env.MAX_ATTEMPTS | quote }}
+            - name: POLL_WAIT_SECONDS
+              value: {{ .Values.worker.env.POLL_WAIT_SECONDS | quote }}
+            - name: SIMULATE_LATENCY_MS
+              value: {{ .Values.worker.env.SIMULATE_LATENCY_MS | quote }}
+            - name: SIMULATE_FAILURE_RATE
+              value: {{ .Values.worker.env.SIMULATE_FAILURE_RATE | quote }}
+            - name: OBSERVABILITY_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: OBSERVABILITY_ENABLED
+            {{- if .Values.observability.enabled }}
+            - name: DD_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: DD_ENV
+            - name: DD_SERVICE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-config
+                  key: DD_SERVICE
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "publishhub.fullname" . }}-datadog
+                  key: api-key
+            {{- end }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "publishhub.fullname" . }}-config
+  labels:
+    {{- include "publishhub.labels" . | nindent 4 }}
+data:
+  QUEUE_BACKEND: {{ .Values.queue.backend | quote }}
+  REDIS_URL: {{ .Values.redis.url | quote }}
+  {{- if eq .Values.queue.backend "sqs" }}
+  SQS_QUEUE_URL: {{ required "sqs.queueUrl is required when queue.backend is sqs" .Values.sqs.queueUrl | quote }}
+  SQS_REGION: {{ .Values.sqs.region | quote }}
+  {{- end }}
+  OBSERVABILITY_ENABLED: {{ .Values.observability.enabled | quote }}
+  {{- if .Values.observability.enabled }}
+  DD_ENV: {{ .Values.observability.datadog.env | quote }}
+  DD_SERVICE: {{ .Values.observability.datadog.service | quote }}
+  {{- if .Values.observability.datadog.version }}
+  DD_VERSION: {{ .Values.observability.datadog.version | quote }}
+  {{- end }}
+  {{- end }}
