@@ -139,11 +139,23 @@ dev-down: require-docker ## Stop the docker compose stack
 
 .PHONY: cluster-up
 cluster-up: require-docker require-kind require-kubectl ## Create the kind cluster and local registry
-	$(call not-implemented,cluster-up,8.1 and 8.2)
+	@bash scripts/kind-with-registry.sh
 
 .PHONY: clean
 clean: require-docker require-kind ## Delete the kind cluster and the registry container
-	$(call not-implemented,clean,8.2)
+	@if kind get clusters 2>/dev/null | grep -q '^$(CLUSTER_NAME)$$'; then \
+	  kind delete cluster --name '$(CLUSTER_NAME)'; \
+	  printf '  Cluster "%s" deleted.\n' '$(CLUSTER_NAME)'; \
+	else \
+	  printf '  Cluster "%s" does not exist — nothing to delete.\n' '$(CLUSTER_NAME)'; \
+	fi
+	@if docker inspect '$(REGISTRY_NAME)' >/dev/null 2>&1; then \
+	  docker rm -f '$(REGISTRY_NAME)' >/dev/null; \
+	  printf '  Registry container "%s" removed.\n' '$(REGISTRY_NAME)'; \
+	else \
+	  printf '  Registry container "%s" does not exist — nothing to remove.\n' '$(REGISTRY_NAME)'; \
+	fi
+	@printf '\n  Clean complete. Cluster and registry resources removed.\n\n'
 
 ##@ Container images
 

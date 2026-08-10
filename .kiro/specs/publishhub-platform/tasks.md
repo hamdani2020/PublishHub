@@ -174,14 +174,14 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Verify the registry catalog lists all three repositories after the build
   - _Requirements: 6.1, 6.4, 6.5_
 
-- [ ] 8. Local Kubernetes cluster
-- [ ] 8.1 Write the kind cluster and registry script
+- [x] 8. Local Kubernetes cluster
+- [x] 8.1 Write the kind cluster and registry script
   - Create or reuse the registry container and the `publishhub-cluster` kind cluster idempotently
   - Configure containerd's registry mirror for `localhost:5001` and connect the registry to the kind network
   - Print the readiness message naming the cluster and registry
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 8.2 Wire the cluster lifecycle make targets
+- [x] 8.2 Wire the cluster lifecycle make targets
   - Implement `cluster-up` and `clean`, with `clean` removing both the cluster and the registry container
   - Verify a repeated `cluster-up` succeeds without duplication and that `clean` leaves no orphaned resources
   - _Requirements: 1.3, 1.5_
