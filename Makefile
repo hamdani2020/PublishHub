@@ -33,6 +33,14 @@ ROLLOUTS_NAMESPACE ?= argo-rollouts
 TERRAFORM_DIR      ?= terraform
 GIT_SHA            := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 
+# Inner loop. The compose project name comes from `name:` in the file, so it is
+# stable no matter which directory make was invoked from. DEV_WAIT_TIMEOUT has to
+# cover the first run's `npm install` and `pip install`; later runs are seconds.
+COMPOSE_FILE       ?= docker-compose.yaml
+COMPOSE            ?= docker compose --file $(COMPOSE_FILE)
+DEV_WAIT_TIMEOUT   ?= 300
+DEV_DOWN_FLAGS     ?=
+
 # Tools required for the local Kubernetes workflow (Requirement 1.6).
 REQUIRED_TOOLS := docker kind kubectl helm
 
@@ -45,6 +53,7 @@ INSTALL_HINT_helm := brew install helm (or https://helm.sh/docs/intro/install/)
 # INSTALL_HINT_terraform := brew install terraform (or https://developer.hashicorp.com/terraform/install)
 INSTALL_HINT_python3 := brew install python@3.11 (or https://www.python.org/downloads/)
 INSTALL_HINT_node := brew install node@20 (or https://nodejs.org/en/download)
+INSTALL_HINT_curl := brew install curl (preinstalled on macOS and most Linux distributions)
 
 # --- Internal helpers --------------------------------------------------------
 
@@ -97,16 +106,34 @@ config: ## Print the resolved configuration variables
 	@printf 'APP_NAMESPACE     = %s\n' '$(APP_NAMESPACE)'
 	@printf 'ARGOCD_NAMESPACE  = %s\n' '$(ARGOCD_NAMESPACE)'
 	@printf 'GIT_SHA           = %s\n' '$(GIT_SHA)'
+	@printf 'IMAGE_TAG         = %s\n' '$(IMAGE_TAG)'
+	@printf 'COMPOSE           = %s\n' '$(COMPOSE)'
 
 ##@ Inner loop (docker compose, no Kubernetes)
 
+# `--wait` blocks until every service reports healthy and fails if one does not,
+# so `make dev-up` returning zero means the stack is actually usable. The timeout
+# has to cover the dependency install on a clean checkout, which is why it is
+# minutes rather than seconds; it is not a per-service health timeout, those live
+# in docker-compose.yaml.
 .PHONY: dev-up
 dev-up: require-docker ## Start Redis, API, worker, and web with docker compose
-	$(call not-implemented,dev-up,6.1)
+	@$(COMPOSE) up --detach --wait --wait-timeout $(DEV_WAIT_TIMEOUT)
+	@printf '\n  PublishHub is up (docker compose, no Kubernetes).\n\n'
+	@printf '    web    http://localhost:3000\n'
+	@printf '    api    http://localhost:8080  — unauthenticated by design, bound to localhost only\n'
+	@printf '    redis  localhost:6379\n\n'
+	@printf '    logs   $(COMPOSE) logs --follow [service]\n'
+	@printf '    stop   make dev-down\n\n'
 
+# Containers and the network go; the dependency-cache volumes stay, because
+# re-downloading them is the slow part of the next `dev-up`. Drop them with
+# `make dev-down DEV_DOWN_FLAGS=--volumes`.
 .PHONY: dev-down
 dev-down: require-docker ## Stop the docker compose stack
-	$(call not-implemented,dev-down,6.1)
+	@$(COMPOSE) down --remove-orphans $(DEV_DOWN_FLAGS)
+	@printf '\n  Stack stopped. Dependency caches kept in named volumes.\n'
+	@printf '  Drop them with: make dev-down DEV_DOWN_FLAGS=--volumes\n\n'
 
 ##@ Local Kubernetes cluster
 
@@ -120,9 +147,71 @@ clean: require-docker require-kind ## Delete the kind cluster and the registry c
 
 ##@ Container images
 
+# One image per directory under apps/. Each Dockerfile takes its own app
+# directory as the build context, so the directory name is both the context and
+# the image name suffix: apps/api -> publishhub-api.
+APPS         ?= api worker web
+IMAGE_PREFIX ?= publishhub
+
+# Every image gets two tags (Requirement 6.4): `latest` for the inner loop and
+# the short commit SHA as the immutable tag the Helm values pin. Override the
+# immutable tag for a scratch build with: make apps-build IMAGE_TAG=wip
+IMAGE_TAG    ?= $(GIT_SHA)
+
 .PHONY: apps-build
-apps-build: require-docker ## Build api, worker, and web images and push to the local registry
-	$(call not-implemented,apps-build,7.3)
+apps-build: require-docker require-curl check-registry ## Build api, worker, and web images and push to the local registry
+	@set -uo pipefail; \
+	if [ -z '$(IMAGE_TAG)' ] || [ '$(IMAGE_TAG)' = unknown ]; then \
+	  printf 'ERROR: refusing to build with the image tag "%s"\n' '$(IMAGE_TAG)' >&2; \
+	  printf '       no commit SHA is available: `git rev-parse HEAD` failed — is this a Git\n' >&2; \
+	  printf '       checkout with at least one commit?\n' >&2; \
+	  printf '       or pass a tag explicitly: make apps-build IMAGE_TAG=<tag>\n' >&2; \
+	  exit 1; \
+	fi; \
+	for app in $(APPS); do \
+	  image='$(REGISTRY)/$(IMAGE_PREFIX)'"-$$app"; \
+	  printf '\n==> %s  (context apps/%s)\n' "$$image" "$$app"; \
+	  docker build --tag "$$image:latest" --tag "$$image:$(IMAGE_TAG)" "apps/$$app" || exit 1; \
+	  docker push "$$image:latest" || exit 1; \
+	  docker push "$$image:$(IMAGE_TAG)" || exit 1; \
+	done; \
+	$(MAKE) --no-print-directory check-catalog || exit 1; \
+	printf '  Pushed %s images, each tagged latest and %s.\n\n' '$(words $(APPS))' '$(IMAGE_TAG)'
+
+# Fails before the first `docker build` rather than after it, so an unreachable
+# registry costs seconds instead of a full build (Requirement 6.1). The /v2/
+# endpoint is the registry API's version check: any 2xx means it is answering.
+.PHONY: check-registry
+check-registry: require-curl ## Verify the local registry is answering
+	@if ! curl --fail --silent --max-time 5 -o /dev/null 'http://$(REGISTRY)/v2/'; then \
+	  printf 'ERROR: local registry not reachable at http://%s/v2/\n' '$(REGISTRY)' >&2; \
+	  printf '       start it with: make cluster-up   (creates the kind cluster and the registry)\n' >&2; \
+	  printf '       running already? check: docker ps --filter name=$(REGISTRY_NAME)\n' >&2; \
+	  printf '       registry on another port? override it: make <target> REGISTRY_PORT=<port>\n' >&2; \
+	  exit 1; \
+	fi
+
+# Requirement 6.5: after a build the catalog must list all three repositories.
+# grep rather than jq, because jq is one more tool to require for one lookup.
+.PHONY: check-catalog
+check-catalog: require-curl ## Verify the registry catalog lists all three repositories
+	@catalog="$$(curl --fail --silent --show-error --max-time 5 'http://$(REGISTRY)/v2/_catalog')" || { \
+	  printf 'ERROR: could not read the registry catalog at http://%s/v2/_catalog\n' '$(REGISTRY)' >&2; \
+	  exit 1; \
+	}; \
+	missing=''; \
+	for app in $(APPS); do \
+	  grep -q "\"$(IMAGE_PREFIX)-$$app\"" <<<"$$catalog" || missing="$$missing $(IMAGE_PREFIX)-$$app"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  printf 'ERROR: registry catalog is missing repositories:%s\n' "$$missing" >&2; \
+	  printf '       catalog: %s\n' "$$catalog" >&2; \
+	  printf '       run: make apps-build\n' >&2; \
+	  exit 1; \
+	fi; \
+	printf '\n  Registry %s lists every repository:\n\n' '$(REGISTRY)'; \
+	for app in $(APPS); do printf '    %s/%s-%s\n' '$(REGISTRY)' '$(IMAGE_PREFIX)' "$$app"; done; \
+	printf '\n    catalog  %s\n\n' "$$catalog"
 
 ##@ Platform layer and GitOps
 
@@ -179,8 +268,7 @@ check-test-layout: ## Fail if any test file sits beside production source
 	@bash scripts/check-test-layout.sh
 
 .PHONY: test
-test: test-api test-web test-worker ## Run unit and integration tests for every service
-	@printf '\n  The end-to-end integration suite arrives with spec task 6.2.\n\n'
+test: test-api test-web test-worker test-integration ## Run unit and integration tests for every service
 
 .PHONY: test-api
 test-api: require-node ## Run the API (TypeScript) unit tests
@@ -199,6 +287,23 @@ test-worker: require-python3 ## Run the worker (Python) unit tests
 	@cd apps/worker && \
 	  { [ -d .venv ] || python3 -m venv .venv; } && \
 	  .venv/bin/pip install --quiet --disable-pip-version-check -r requirements-dev.txt && \
+	  .venv/bin/python -m pytest
+
+# The end-to-end suite: submit a post through the real API and assert the real
+# worker takes it to a terminal status, then force every publish to fail and
+# assert the message lands in the dead-letter list (Requirements 2.1, 3.1, 3.4,
+# 5.4). It drives the same docker-compose.yaml `make dev-up` uses.
+#
+# `require-docker` is deliberately *not* a prerequisite. A machine without Docker,
+# or with Docker installed but not running, has not broken PublishHub, so the
+# suite skips with a message naming what to start and `make test` stays green —
+# see docker_unavailable_reason() in tests/integration/stack.py. Skip it on
+# purpose with: PUBLISHHUB_SKIP_INTEGRATION=1 make test
+.PHONY: test-integration
+test-integration: require-python3 ## Run the end-to-end integration suite (docker compose)
+	@cd tests/integration && \
+	  { [ -d .venv ] || python3 -m venv .venv; } && \
+	  .venv/bin/pip install --quiet --disable-pip-version-check -r requirements.txt && \
 	  .venv/bin/python -m pytest
 
 ##@ AWS infrastructure (read-only targets only)

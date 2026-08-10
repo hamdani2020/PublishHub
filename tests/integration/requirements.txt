@@ -1,0 +1,11 @@
+# PublishHub end-to-end integration suite — dependencies.
+#
+# One package, pinned to the same version the worker's suite uses so a pytest
+# upgrade is a single decision in two files rather than two behaviors.
+#
+# Nothing else is here by design. The HTTP calls go through `urllib.request` and
+# the queue assertions go through `redis-cli` inside the redis container, so this
+# suite carries neither an HTTP client nor a Redis client of its own — one less
+# thing to pin, and no chance of asserting through a client version the services
+# themselves do not use.
+pytest==9.1.1

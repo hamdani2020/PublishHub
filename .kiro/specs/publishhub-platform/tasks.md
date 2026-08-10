@@ -145,31 +145,31 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write a test for the populated and empty states
   - _Requirements: 4.5, 4.6_
 
-- [ ] 6. Local integration loop
-- [ ] 6.1 Create docker-compose for the fast inner loop
+- [x] 6. Local integration loop
+- [x] 6.1 Create docker-compose for the fast inner loop
   - Define Redis, API, worker, and web services with the local environment configuration
   - Wire `make dev-up` and `make dev-down` to compose
   - _Requirements: 16.2_
 
-- [ ] 6.2 Write the end-to-end integration test
+- [x] 6.2 Write the end-to-end integration test
   - Submit a post through the API and assert it reaches a terminal status via the worker
   - Assert a forced-failure job lands in the dead-letter destination
   - Wire the test into `make test`
   - _Requirements: 2.1, 3.1, 3.4, 5.4_
 
-- [ ] 7. Container images
-- [ ] 7.1 Write the API and worker Dockerfiles
+- [x] 7. Container images
+- [x] 7.1 Write the API and worker Dockerfiles
   - Use multi-stage builds with pinned base images that exclude build toolchains from the final layer
   - Run as a non-root user with correct signal handling so `SIGTERM` reaches the process
   - _Requirements: 6.2, 6.3, 6.6, 2.8, 3.6_
 
-- [ ] 7.2 Write the web Dockerfile, nginx config, and entrypoint
+- [x] 7.2 Write the web Dockerfile, nginx config, and entrypoint
   - Build static assets, then serve them from `nginx-unprivileged` on port 8080
   - Proxy `/api` to the API Service so the browser makes same-origin requests
   - Generate `config.js` from environment variables at container start
   - _Requirements: 4.7, 6.2, 6.3_
 
-- [ ] 7.3 Implement the apps-build target
+- [x] 7.3 Implement the apps-build target
   - Build all three images tagged with both `latest` and the Git commit SHA, then push to the local registry
   - Verify the registry catalog lists all three repositories after the build
   - _Requirements: 6.1, 6.4, 6.5_

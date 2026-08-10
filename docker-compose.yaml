@@ -1,0 +1,261 @@
+# PublishHub — the fast inner loop (Requirement 16.2).
+#
+# `make dev-up` gives you Redis, the API, the worker, and the web frontend in
+# seconds, with your working tree mounted into each container, so editing a file
+# reloads the service that owns it. No kind cluster, no image build, no registry.
+# The Kubernetes path (`make cluster-up`, `make apps-build`, `make argocd-sync`)
+# is the one that proves the deployment; this file is the one you keep open while
+# writing code.
+#
+# It is deliberately a *development* environment, and it says so in three ways:
+#
+#   - Base images run the interpreter and install dependencies at start. The
+#     hardened multi-stage images with non-root users, pinned toolchains, and
+#     correct signal handling are spec task 7 and live in each app's Dockerfile.
+#     Nothing here is a substitute for those, and nothing here is deployed.
+#   - Every published port is bound to `127.0.0.1`. The API has no
+#     authentication by design (Requirement 2.9), so it must not be reachable
+#     from the rest of the network; binding the loopback interface rather than
+#     `0.0.0.0` is what keeps `docker compose up` from publishing an
+#     unauthenticated API to your LAN.
+#   - Redis runs with persistence off. Post records and queue contents are
+#     expected to disappear with the stack, which is what you want between two
+#     runs of a test.
+#
+# Configuration values below are the local defaults from the design document's
+# configuration reference, so a service behaves the same here as it does under
+# the Helm chart's `values.yaml`. The knobs worth turning during a demo — the
+# simulation and retry settings — read from your shell first, so
+# `SIMULATE_FAILURE_RATE=1 make dev-up` exercises the retry and dead-letter path
+# without editing this file.
+
+name: publishhub
+
+services:
+  # ---------------------------------------------------------------------------
+  # Redis: the local queue backend *and* the post record store.
+  #
+  # The network alias is the point of interest. `redis://publishhub-redis:6379`
+  # is the documented default `REDIS_URL` for both services, and it is the name
+  # the Helm chart's Service will have, so the alias lets compose and Kubernetes
+  # share one value instead of drifting apart over a hostname.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7.4.10-alpine3.21
+    # Persistence off, both mechanisms: no RDB snapshots, no append-only file.
+    # A stale post from an hour ago is worse than an empty list.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    networks:
+      default:
+        aliases:
+          - publishhub-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      # `redis-cli ping` exits non-zero when it cannot connect, but grepping the
+      # reply also catches a server that answers while still loading.
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # API: express + tsx watch, so a save restarts the process in about a second.
+  #
+  # `npm install` runs at start against the mounted tree. It is a near no-op once
+  # the named volume below is warm, and it is what makes the first `make dev-up`
+  # work on a clean checkout without a build step. The volume exists because the
+  # host's `apps/api/node_modules` was installed for macOS: the container needs
+  # its own Linux tree at the same path, and a named volume mounted over the bind
+  # mount is how it gets one without either side clobbering the other.
+  # ---------------------------------------------------------------------------
+  api:
+    # Same tag as apps/api/Dockerfile, so the interpreter that runs your tests is
+    # the interpreter that runs in the cluster. Node 24 rather than 20 because
+    # dd-trace 6.x requires >=22 and package-lock.json needs npm 11, which no
+    # Node 20 or 22 release ships — the API Dockerfile header has the details.
+    image: node:24.19.0-bookworm-slim
+    working_dir: /app
+    # `init: true` puts tini at PID 1 so signals reach the process and exited
+    # children are reaped. The signal path that actually matters at deploy time
+    # is the container image's (spec task 7.1) and the shutdown sequence's own
+    # unit tests; here it just means Ctrl-C stops things cleanly.
+    init: true
+    command:
+      - sh
+      - -c
+      - npm install --no-audit --no-fund && exec npm run dev
+    environment:
+      # Local defaults from the design's configuration reference.
+      PORT: "8080"
+      NODE_ENV: development
+      # The browser talks to the web service, which proxies `/api` to this
+      # service, so requests are same-origin and CORS never comes into it. The
+      # allow-list is still set for anyone hitting the API from the dev server
+      # directly. `*` is only ever legal in development, and the config loader
+      # refuses it anywhere else (Requirement 2.9).
+      CORS_ORIGINS: http://localhost:3000
+      QUEUE_BACKEND: redis
+      REDIS_URL: redis://publishhub-redis:6379
+      # No Datadog account required, and none reached (Requirement 14.6).
+      OBSERVABILITY_ENABLED: ${OBSERVABILITY_ENABLED:-false}
+      DD_SERVICE: publishhub-api
+      DD_ENV: development
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+    volumes:
+      - ./apps/api:/app
+      - api-node-modules:/app/node_modules
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    # `/health` is process liveness only and never touches Redis, which is
+    # exactly what a container health check should ask (Requirement 2.3).
+    # Node's global `fetch` avoids adding curl to a slim image.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # Generous: the first start of a clean checkout spends this window in
+      # `npm install`, and failures during it do not count against `retries`.
+      start_period: 180s
+    # Comfortably above the shutdown sequence's own 15s budget, so the process
+    # finishes draining on its own terms instead of being killed mid-close.
+    stop_grace_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Worker: `python -m publishhub_worker`, the same entrypoint the image uses.
+  #
+  # Dependencies install into `PYTHONUSERBASE`, which is a named volume, so they
+  # survive a restart and stay out of the mounted tree. `PYTHONPATH=/app/src`
+  # matches `pytest.ini`'s `pythonpath` — the package is importable without an
+  # editable install either way.
+  # ---------------------------------------------------------------------------
+  worker:
+    image: python:3.11.15-slim-bookworm
+    working_dir: /app
+    init: true
+    command:
+      - sh
+      - -c
+      - pip install --user --quiet -r requirements.txt && exec python -m publishhub_worker
+    environment:
+      QUEUE_BACKEND: redis
+      REDIS_URL: redis://publishhub-redis:6379
+      MAX_ATTEMPTS: ${MAX_ATTEMPTS:-3}
+      # The chart uses the documented default of 20. Five here because a blocking
+      # receive is also what `make dev-down` waits out, and trading a handful of
+      # extra Redis round trips per minute for a stack that stops four times
+      # faster is the right trade in an inner loop. Idle CPU stays at zero
+      # either way: this is a blocking `BRPOPLPUSH`, not a poll (Requirement 3.2).
+      POLL_WAIT_SECONDS: ${POLL_WAIT_SECONDS:-5}
+      SIMULATE_LATENCY_MS: ${SIMULATE_LATENCY_MS:-500}
+      # Set this to exercise retry, backoff, and dead-lettering:
+      #   SIMULATE_FAILURE_RATE=1 make dev-up
+      SIMULATE_FAILURE_RATE: ${SIMULATE_FAILURE_RATE:-0}
+      OBSERVABILITY_ENABLED: ${OBSERVABILITY_ENABLED:-false}
+      DD_SERVICE: publishhub-worker
+      DD_ENV: development
+      PYTHONPATH: /app/src
+      # Unbuffered so log lines appear in `docker compose logs` as they happen,
+      # and no `.pyc` files so the container never writes root-owned
+      # `__pycache__` directories into your working tree.
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUSERBASE: /pydeps
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_ROOT_USER_ACTION: ignore
+    volumes:
+      - ./apps/worker:/app
+      - worker-pydeps:/pydeps
+    depends_on:
+      redis:
+        condition: service_healthy
+    # The same marker file the chart's readiness probe reads. It appears once the
+    # queue has answered and is removed before connections close, so an
+    # unhealthy worker here means "cannot consume", not "process is gone".
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/publishhub-worker.ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 120s
+    # The worker logs its own worst-case shutdown budget at startup — the
+    # in-flight job's simulated publishes, one retry backoff, and closing two
+    # connections, roughly 9s at these settings, plus the poll window. 30s keeps
+    # SIGKILL out of the picture so no claimed job is lost (Requirements 3.6, 9.6).
+    stop_grace_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Web: the Vite dev server, with its `/api` proxy pointed at the API service.
+  #
+  # That proxy is why the frontend needs no per-environment base URL: `/api` is
+  # same-origin in development and same-origin behind nginx in the container
+  # image (spec task 7.2), so `API_BASE_URL` has nothing to override here
+  # (Requirement 4.7).
+  #
+  # `depends_on` is `service_started`, not `service_healthy`, on purpose. The UI
+  # is supposed to render an actionable message when the API is unreachable
+  # (Requirement 4.3), and waiting for the API to be healthy would hide the very
+  # state that behavior exists for.
+  # ---------------------------------------------------------------------------
+  web:
+    # Kept on the same tag as the api service. The frontend's own tree has no
+    # Node 24 requirement, but one interpreter across the inner loop is one thing
+    # to upgrade and one thing to reproduce a bug against.
+    image: node:24.19.0-bookworm-slim
+    working_dir: /app
+    init: true
+    # `--host 0.0.0.0` because Vite binds the loopback interface by default,
+    # which inside a container means nothing outside it can connect.
+    command:
+      - sh
+      - -c
+      - npm install --no-audit --no-fund && exec npm run dev -- --host 0.0.0.0
+    environment:
+      # Read by `vite.config.ts`; the proxy target is the API service, not
+      # localhost, because "localhost" in this container is this container.
+      VITE_DEV_API_TARGET: http://api:8080
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+    volumes:
+      - ./apps/web:/app
+      - web-node-modules:/app/node_modules
+    ports:
+      # `strictPort` is set in `vite.config.ts`, so this mapping is one-to-one
+      # and a port conflict fails loudly instead of moving the server.
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
+
+# Dependency caches, not data. They are what makes the second `make dev-up`
+# fast, and they are safe to drop at any time:
+#   make dev-down DEV_DOWN_FLAGS=--volumes
+# There is deliberately no volume for Redis: see the note on persistence above.
+volumes:
+  api-node-modules:
+  web-node-modules:
+  worker-pydeps:
+
+# Declared explicitly rather than relying on the implicit default network,
+# because the `publishhub-redis` alias above has to attach to a named network.
+networks:
+  default:
+    name: publishhub-dev

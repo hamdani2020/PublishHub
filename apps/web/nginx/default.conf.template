@@ -1,0 +1,221 @@
+# PublishHub web — nginx server configuration (Requirements 4.7, 6.3).
+#
+# This file is a *template*. The base image's own
+# /docker-entrypoint.d/20-envsubst-on-templates.sh renders every
+# /etc/nginx/templates/*.template into /etc/nginx/conf.d/ before nginx starts, so
+# the rendered result lands at /etc/nginx/conf.d/default.conf and is picked up by
+# nginx.conf's `include /etc/nginx/conf.d/*.conf;`.
+#
+# Exactly one variable is substituted: `${API_UPSTREAM}`. The image sets
+# `NGINX_ENVSUBST_FILTER=^API_UPSTREAM`, which is what keeps envsubst from eating
+# nginx's own `$uri`, `$host`, `$request_id` and friends — with no filter,
+# envsubst is handed every variable in the environment, and a container that
+# happens to have `HOSTNAME` or `PORT` set would have those chewed out of an
+# nginx config that meant something else by them.
+#
+# `API_UPSTREAM` has a default in the Dockerfile, so the template always renders
+# to something valid. The entrypoint script validates the value before nginx is
+# executed, because `proxy_pass` with a garbled URL fails with an nginx parse
+# error that does not mention the environment variable it came from.
+#
+# ---------------------------------------------------------------------------
+# One inheritance rule governs the shape of everything below, and getting it
+# wrong is silent:
+#
+#   `add_header` directives are inherited from the enclosing level *only if the
+#   current level declares none of its own.*
+#
+# So the security headers are declared once at server level and every static
+# location deliberately uses `expires` (a different directive, which does not
+# affect add_header inheritance) instead of adding a Cache-Control header by
+# hand. Adding a single `add_header` to `location /` would silently drop all of
+# them from every page load. The one place that does declare an `add_header` is
+# `location /api/`, and there it is on purpose — see the note in that block.
+# ---------------------------------------------------------------------------
+
+# Correlation id continuity across the proxy hop (Requirement 2.6).
+#
+# The API reuses an inbound `X-Request-Id` when it is well-formed and mints one
+# otherwise (see resolveCorrelationId in apps/api/src/logging/request-logger.ts),
+# so passing nginx's own `$request_id` when the browser did not supply one gives
+# one id shared by the nginx access log line and the API's JSON log line.
+# nginx's `$request_id` is 32 hex characters, which satisfies the API's
+# `^[A-Za-z0-9_.:-]{1,128}$` guard.
+#
+# `map` is an http-context directive, and this file is included from http, so it
+# belongs here rather than inside the server block.
+map $http_x_request_id $publishhub_correlation_id {
+    default $http_x_request_id;
+    ""      $request_id;
+}
+
+server {
+    # IPv4 only, and deliberately no `listen [::]:8080;`. On a host with IPv6
+    # disabled in the kernel, binding `[::]` fails at startup and nginx exits —
+    # which is exactly why the base image ships a
+    # 10-listen-on-ipv6-by-default.sh that probes for IPv6 before adding the
+    # line. That script only edits a pre-existing conf.d/default.conf, and ours
+    # does not exist yet when it runs, so the safe default is the one the base
+    # image's own default.conf uses. A dual-stack or IPv6 cluster wants the
+    # second listen line added here.
+    #
+    # 8080 rather than 80 because the process runs as uid 101 and an unprivileged
+    # user cannot bind a port below 1024 (Requirement 6.3).
+    listen 8080;
+
+    # This server answers for whatever Host it is given: in the cluster that is a
+    # Service name, an Ingress host, or a pod IP from a kubelet probe, and none of
+    # them are worth enumerating here.
+    server_name _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    # nginx does not add a charset to text responses on its own. index.html
+    # declares its own <meta charset>, but the CSS and JS it pulls in do not.
+    charset utf-8;
+
+    # Do not advertise the exact nginx version to anyone deciding which CVE list
+    # to start from.
+    server_tokens off;
+
+    # An outer guard only. The API's own limit is 64kb (JSON_BODY_LIMIT in
+    # apps/api/src/http/security.ts) and it is the authoritative one: leaving room
+    # above it means an oversized publish request reaches the API and comes back
+    # as the documented 413 envelope, rather than as nginx's HTML error page,
+    # which the frontend cannot parse into a message (Requirement 4.3).
+    client_max_body_size 1m;
+
+    # Security headers for everything this server serves itself. Proxied /api
+    # responses are excluded by design, because the API sets its own via helmet
+    # and duplicated CSP headers are enforced as their intersection.
+    #
+    # `always` so they are attached to error responses too — a 404 or a 500 is
+    # served from the same origin as the app and needs the same protections.
+    #
+    # No HSTS: TLS is terminated in front of this container (an Ingress or a load
+    # balancer), and that is where `Strict-Transport-Security` belongs. Setting it
+    # here would either be ignored on plain HTTP or would apply to a
+    # port-forwarded localhost session, which is a bad surprise.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    # `connect-src 'self'` is correct for the documented configuration, where
+    # `API_BASE_URL` is the same-origin default `/api` and this server proxies it.
+    # Pointing API_BASE_URL at a different origin also means widening this header
+    # and enabling CORS on the API — that combination is the reason the proxy
+    # exists, and why it is the default rather than the exception.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+
+    # The bundle is one JS chunk and one CSS file; both compress by roughly 3x,
+    # and both are on the critical path of the first paint. `gzip_min_length`
+    # keeps nginx from spending CPU on responses too small to benefit, and
+    # `gzip_vary` keeps a cache in front of this from serving compressed bytes to
+    # a client that did not ask for them.
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_types text/css text/javascript application/javascript application/json image/svg+xml;
+
+    # Liveness for the chart's probes (Requirement 7.2): cheap, unlogged, and it
+    # answers whether nginx is up without serving or logging the SPA every few
+    # seconds. Readiness should probe `/` instead — that one also proves the
+    # assets are actually present, which is the useful difference between "the
+    # server is running" and "the server can serve the app".
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Runtime configuration (Requirement 4.7).
+    #
+    # Served from its own root, not from the asset directory, and that separation
+    # is the point: /usr/share/nginx/html is root-owned and unwritable by the
+    # runtime user, while /usr/share/nginx/runtime is the one directory uid 101
+    # can write. So the file the entrypoint generates cannot sit next to the
+    # assets without making the assets writable too. `root` (not `alias`)
+    # appends the URI, so `/config.js` resolves to
+    # /usr/share/nginx/runtime/config.js.
+    #
+    # `expires -1` sends `Cache-Control: no-cache`, so a browser revalidates it on
+    # every load. Without that, a cached config.js would outlive the deployment
+    # that changed it and point the app at the wrong API for as long as the cache
+    # entry survived.
+    #
+    # If the entrypoint never wrote the file this 404s, and that is a designed
+    # path rather than a broken one: readRuntimeConfig falls back to the
+    # documented `/api` default, which is the same value this proxy serves.
+    location = /config.js {
+        root /usr/share/nginx/runtime;
+        expires -1;
+    }
+
+    # Vite emits content-hashed filenames into /assets, so a given URL's bytes
+    # never change and the response can be cached indefinitely. `expires max`
+    # sends a ten-year max-age; a new deployment produces new filenames, which is
+    # what makes that safe.
+    location /assets/ {
+        expires max;
+    }
+
+    # Same-origin API access (Requirement 4.7).
+    #
+    # The frontend requests `/api/v1/...` and the API mounts its routes at
+    # `/api/v1`, so the URI is passed through unchanged: `proxy_pass` with no path
+    # component on the target forwards the original request URI. Adding a trailing
+    # slash or a path to API_UPSTREAM would rewrite the prefix and 404 every call,
+    # which is why the entrypoint rejects both.
+    #
+    # `proxy_pass` with a literal host resolves that host once, at config load, so
+    # nginx refuses to start when the name does not resolve — `nginx: [emerg] host
+    # not found in upstream`. In Kubernetes a Service name resolves as soon as the
+    # Service object exists, endpoints or not, so the chart deploying api and web
+    # together makes this a non-event; a web pod that somehow starts first
+    # crash-loops until the Service appears. That is the intended trade: a pod that
+    # cannot reach its API is not ready, and finding out at startup beats finding
+    # out in the browser.
+    #
+    # The `add_header` here is load-bearing twice over. It stops browsers and
+    # intermediaries from caching API responses, and — because a level that
+    # declares any add_header inherits none — it keeps the server-level security
+    # headers off proxied responses, leaving the API's own headers as the only
+    # ones on its answers.
+    location /api/ {
+        add_header Cache-Control "no-store" always;
+
+        proxy_pass ${API_UPSTREAM};
+
+        # 1.1 with an emptied Connection header so keepalive to the upstream is
+        # not turned into a per-request connection.
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id $publishhub_correlation_id;
+
+        # A publish is an enqueue, so these are all short by design: the API
+        # answers 202 without waiting for the work. A long read timeout here would
+        # turn a wedged API into a browser that appears to hang instead of showing
+        # the actionable error the UI has for it (Requirement 4.3).
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 15s;
+        proxy_read_timeout 30s;
+    }
+
+    # SPA fallback. The app is client-routed, so a deep link has no file behind it
+    # and must be answered with index.html; the router takes it from there.
+    #
+    # `expires -1` on the shell document for the same reason as config.js: the
+    # HTML references hashed asset URLs, so a stale index.html pins a browser to
+    # the previous deployment's bundle.
+    location / {
+        expires -1;
+        try_files $uri $uri/ /index.html;
+    }
+}

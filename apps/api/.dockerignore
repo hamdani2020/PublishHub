@@ -1,0 +1,49 @@
+# Build context for apps/api (spec task 7.1).
+#
+# Everything here is either rebuilt inside the image, irrelevant to it, or
+# actively harmful if it leaks in. The last category is why this file exists at
+# all: a host `node_modules` installed on macOS copied into a Linux image gives
+# you native modules for the wrong platform, and it is the single largest thing
+# in this directory, so excluding it makes the build both correct and fast.
+#
+# The pattern is deny-what-we-know rather than allow-list, because the Dockerfile
+# already copies only the four paths it needs (`package.json`,
+# `package-lock.json`, the two tsconfigs, and `src`). This file's job is to keep
+# the context small and the cache honest.
+
+# Installed inside the image by `npm ci`, for the image's platform.
+node_modules
+
+# Compiled inside the image by `npm run build`. A stale host `dist` in the
+# context would invalidate the build stage's cache on every local `tsc` run.
+dist
+
+# Test-only sources. Excluded from compilation by tsconfig.build.json already, so
+# this is about the context and the build stage, not the final image.
+src/**/*.test.ts
+src/**/testing
+vitest.config.ts
+coverage
+
+# Tooling that has no bearing on a production build.
+eslint.config.js
+.eslintcache
+*.log
+npm-debug.log*
+
+# Local environment and editor noise. `.env*` in particular must never reach a
+# layer: secrets do not belong in images (Requirement 14.7).
+.env
+.env.*
+.venv
+.DS_Store
+.vscode
+.idea
+
+# Git metadata. The image is tagged with the commit SHA from outside (task 7.3);
+# it does not need the history to know its own version.
+.git
+.gitignore
+
+# Documentation.
+*.md

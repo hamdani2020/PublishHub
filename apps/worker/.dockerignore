@@ -1,0 +1,48 @@
+# Build context for apps/worker (spec task 7.1).
+#
+# The two entries that matter are `.venv` and `__pycache__`. The virtualenv is
+# built by `make test-worker` against the host's Python and its interpreter
+# symlinks point at paths that do not exist in the image, so copying it in would
+# be both large and useless. Bytecode caches are worse than useless: they are
+# written by whichever Python compiled them and, if stale, shadow the source you
+# think you are running.
+
+# Host virtualenv, built by make lint-worker / test-worker.
+.venv
+venv
+
+# Compiled bytecode. The image sets PYTHONDONTWRITEBYTECODE so it creates none of
+# its own either.
+__pycache__
+*.py[cod]
+*.egg-info
+
+# Tool caches.
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# The test suite and its dependencies stay out of the image entirely
+# (Requirement 6.2). requirements-dev.txt is excluded with them: the runtime
+# install reads requirements.txt only.
+tests
+pytest.ini
+ruff.toml
+requirements-dev.txt
+
+# Local environment and editor noise. `.env*` must never reach a layer: secrets do
+# not belong in images (Requirement 14.7).
+.env
+.env.*
+.DS_Store
+.vscode
+.idea
+
+# Git metadata. The image is tagged with the commit SHA from outside (task 7.3).
+.git
+.gitignore
+
+# Documentation.
+*.md

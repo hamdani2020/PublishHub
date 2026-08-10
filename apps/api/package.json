@@ -4,8 +4,9 @@
   "private": true,
   "description": "PublishHub API gateway: validates publish requests, enqueues jobs, and serves post state.",
   "type": "module",
+  "//engines": "Node 24, matching the pinned base image in Dockerfile and the interpreter in docker-compose.yaml. The floor is set by two things in the tree below, not by taste: dd-trace 6.x declares engines >=22, and package-lock.json is npm 11 shaped, which `npm ci` can only read from npm 11 — the npm 10.x that ships with Node 20 and Node 22 rejects it.",
   "engines": {
-    "node": ">=20.19"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",

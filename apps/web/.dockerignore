@@ -1,0 +1,47 @@
+# Build context for apps/web (spec task 7.2).
+#
+# Same reasoning as apps/api/.dockerignore: the Dockerfile copies only the paths
+# it needs, so this file's job is to keep the context small and the layer cache
+# honest. The one entry that is about correctness rather than speed is
+# `node_modules` — a host tree installed on macOS carries binaries for the wrong
+# platform, and esbuild (which Vite runs) ships exactly that kind of
+# platform-specific binary.
+
+# Installed inside the image by `npm ci`, for the image's platform.
+node_modules
+
+# Built inside the image by `vite build`. A stale host `dist` in the context would
+# invalidate the build stage's cache after every local build for no reason.
+dist
+
+# Test-only sources. Vite never bundles them (nothing production imports them),
+# so this is about the context rather than about the final image, but a container
+# image with a test suite in it is a container image nobody trimmed.
+src/**/*.test.ts
+src/**/*.test.tsx
+src/**/testing
+vitest.config.ts
+coverage
+
+# Tooling with no bearing on a production build.
+eslint.config.js
+.eslintcache
+*.log
+npm-debug.log*
+
+# Local environment and editor noise. `.env*` in particular must never reach a
+# layer: Vite inlines anything prefixed `VITE_` into the bundle at build time, so
+# a stray .env file here would ship its contents to every browser.
+.env
+.env.*
+.venv
+.DS_Store
+.vscode
+.idea
+
+# Git metadata. The image is tagged with the commit SHA from outside (task 7.3).
+.git
+.gitignore
+
+# Documentation.
+*.md
