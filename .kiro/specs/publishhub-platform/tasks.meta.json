@@ -551,6 +551,16 @@
         "executionId": "64e42a62-bb3b-41f9-b68f-8fde0c930305",
         "chatSessionId": "sess_62c1a4dc-fff8-4f04-a445-44a5fa4d56ce",
         "timestamp": 1786358235694
+      },
+      {
+        "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
+        "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
+        "timestamp": 1786368422255
+      },
+      {
+        "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
+        "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
+        "timestamp": 1786368757506
       }
     ],
     "11.2 Write the scaling verification script": [
@@ -558,6 +568,16 @@
         "executionId": "64e42a62-bb3b-41f9-b68f-8fde0c930305",
         "chatSessionId": "sess_62c1a4dc-fff8-4f04-a445-44a5fa4d56ce",
         "timestamp": 1786358235921
+      },
+      {
+        "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
+        "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
+        "timestamp": 1786368423045
+      },
+      {
+        "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
+        "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
+        "timestamp": 1786368758158
       }
     ],
     "12.1 Configure the canary strategy and analysis": [
@@ -719,6 +739,13 @@
         "executionId": "29131b6b-2eee-4f82-85ea-7dcc31fb2888",
         "chatSessionId": "sess_2f61ef6a-0708-4a5e-a248-efad7aab5be0",
         "timestamp": 1786367979441
+      }
+    ],
+    "11. Autoscaling verification": [
+      {
+        "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
+        "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
+        "timestamp": 1786368758393
       }
     ]
   }

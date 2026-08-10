@@ -238,12 +238,12 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Verify self-healing by mutating a live resource and confirming ArgoCD restores it
   - _Requirements: 8.5, 9.1_
 
-- [ ] 11. Autoscaling verification
-- [~] 11.1 Write the load generation script
+- [x] 11. Autoscaling verification
+- [x] 11.1 Write the load generation script
   - Submit a configurable burst of publish requests against the port-forwarded API
   - _Requirements: 9.7_
 
-- [~] 11.2 Write the scaling verification script
+- [x] 11.2 Write the scaling verification script
   - Assert workers sit at zero when idle, scale above one replica under the burst, and return to minimum after the queue drains
   - Assert no job is lost or duplicated across a scale-down, and surface HPA, ScaledObject, and KEDA operator state on failure
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 9.7_
