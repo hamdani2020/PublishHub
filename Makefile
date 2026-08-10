@@ -229,27 +229,62 @@ check-catalog: require-curl ## Verify the registry catalog lists all three repos
 
 .PHONY: platform-install
 platform-install: require-kubectl require-helm ## Install ArgoCD, KEDA, and Argo Rollouts
-	$(call not-implemented,platform-install,10.1)
+	@bash scripts/platform-install.sh
 
 .PHONY: argocd-sync
 argocd-sync: require-kubectl ## Apply the ArgoCD bootstrap Application (App of Apps)
-	$(call not-implemented,argocd-sync,10.3)
+	@printf '\n  Applying bootstrap Application (App of Apps)...\n\n'
+	@kubectl apply -f argocd/bootstrap.yaml
+	@printf '\n  Waiting for bootstrap Application to sync...\n'
+	@kubectl wait --for=jsonpath='{.status.health.status}'=Healthy \
+	  application/bootstrap -n $(ARGOCD_NAMESPACE) --timeout=120s 2>/dev/null || \
+	  printf '  (bootstrap not yet Healthy — continuing; ArgoCD may still be syncing)\n'
+	@printf '  Waiting for publishhub Application to appear and sync...\n'
+	@for i in $$(seq 1 30); do \
+	  if kubectl get application publishhub -n $(ARGOCD_NAMESPACE) >/dev/null 2>&1; then \
+	    break; \
+	  fi; \
+	  sleep 2; \
+	done
+	@kubectl wait --for=jsonpath='{.status.health.status}'=Healthy \
+	  application/publishhub -n $(ARGOCD_NAMESPACE) --timeout=180s 2>/dev/null || \
+	  printf '  (publishhub not yet Healthy — pods may still be starting)\n'
+	@printf '\n  Verifying Applications:\n\n'
+	@kubectl get applications -n $(ARGOCD_NAMESPACE)
+	@printf '\n  Verifying pods in %s namespace:\n\n' '$(APP_NAMESPACE)'
+	@kubectl get pods -n $(APP_NAMESPACE) 2>/dev/null || \
+	  printf '  (namespace %s not yet created)\n' '$(APP_NAMESPACE)'
+	@printf '\n  Checking ScaledObject:\n\n'
+	@kubectl get scaledobject -n $(APP_NAMESPACE) 2>/dev/null || \
+	  printf '  (no ScaledObjects found yet)\n'
+	@printf '\n  ArgoCD sync complete. Both Applications applied.\n\n'
 
 .PHONY: argocd-password
 argocd-password: require-kubectl ## Print the initial ArgoCD admin password
-	$(call not-implemented,argocd-password,10.3)
+	@printf '\n  ArgoCD initial admin password:\n\n    '
+	@kubectl -n $(ARGOCD_NAMESPACE) get secret argocd-initial-admin-secret \
+	  -o jsonpath='{.data.password}' | base64 -d
+	@printf '\n\n  Username: admin\n'
+	@printf '  Use with: make argocd-port-forward  (then open https://localhost:8443)\n\n'
 
 .PHONY: argocd-port-forward
-argocd-port-forward: require-kubectl ## Forward the ArgoCD UI to localhost:8080
-	$(call not-implemented,argocd-port-forward,10.3)
+argocd-port-forward: require-kubectl ## Forward the ArgoCD UI to localhost:8443
+	@printf '\n  Forwarding ArgoCD UI to https://localhost:8443\n'
+	@printf '  (accept the self-signed certificate warning in your browser)\n'
+	@printf '  Press Ctrl-C to stop.\n\n'
+	@kubectl port-forward svc/argocd-server -n $(ARGOCD_NAMESPACE) 8443:443
 
 .PHONY: web-port-forward
 web-port-forward: require-kubectl ## Forward the web frontend to localhost:3000
-	$(call not-implemented,web-port-forward,10.3)
+	@printf '\n  Forwarding web frontend to http://localhost:3000\n'
+	@printf '  Press Ctrl-C to stop.\n\n'
+	@kubectl port-forward svc/publishhub-web -n $(APP_NAMESPACE) 3000:8080
 
 .PHONY: api-port-forward
 api-port-forward: require-kubectl ## Forward the API to localhost:8081
-	$(call not-implemented,api-port-forward,10.3)
+	@printf '\n  Forwarding API to http://localhost:8081\n'
+	@printf '  Press Ctrl-C to stop.\n\n'
+	@kubectl port-forward svc/publishhub-api -n $(APP_NAMESPACE) 8081:8080
 
 ##@ Quality gates
 

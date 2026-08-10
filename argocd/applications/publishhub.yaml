@@ -1,0 +1,54 @@
+# ArgoCD Application — publishhub
+#
+# Deploys the Helm chart at helm/publishhub/ to the publishhub namespace with
+# automated sync, self-healing, and pruning (Requirement 8.3).
+#
+# This file is managed by the bootstrap Application (App of Apps pattern,
+# Requirement 8.2). Do not apply it by hand.
+#
+# Repository URL (Requirement 8.7):
+#   The repoURL below must match bootstrap.yaml and projects/publishhub.yaml.
+#   See argocd/config.yaml for the one-liner to update all manifests when forking.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: publishhub
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # References the AppProject that restricts repos, namespaces, and resources
+  project: publishhub
+
+  source:
+    # --- REPO URL (single configurable location — Requirement 8.7) ---
+    repoURL: https://github.com/hamdani2020/PublishHub.git
+    targetRevision: HEAD
+    path: helm/publishhub
+    helm:
+      # Use the default values file (kind/local defaults).
+      # For production, override with values-production.yaml in a separate
+      # Application or via ApplicationSet.
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: publishhub
+
+  syncPolicy:
+    automated:
+      # Prune resources that are no longer in Git (Requirement 8.3)
+      prune: true
+      # Self-heal: revert manual kubectl edits back to Git state (Requirement 8.5)
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

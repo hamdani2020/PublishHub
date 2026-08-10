@@ -1,0 +1,50 @@
+# ArgoCD AppProject — publishhub
+#
+# Restricts what the publishhub Application can deploy (Requirement 8.4):
+#   - Source repositories: only this repo
+#   - Destination namespaces: only the publishhub namespace
+#   - Cluster-scoped resources: explicit allow-list
+#
+# Repository URL (Requirement 8.7):
+#   The sourceRepos value below must match the repoURL in bootstrap.yaml and
+#   applications/publishhub.yaml. See argocd/config.yaml for the one-liner
+#   to update all manifests when forking.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: publishhub
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: PublishHub application project — publishing platform services
+
+  # Only this repository is trusted as a source (Requirement 8.4)
+  sourceRepos:
+    # --- REPO URL (single configurable location — Requirement 8.7) ---
+    - https://github.com/hamdani2020/PublishHub.git
+
+  # Destinations restricted to the publishhub namespace on the in-cluster server
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: publishhub
+
+  # Cluster-scoped resources the project is allowed to create.
+  # This is an explicit allow-list; anything not listed is denied.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+
+  # Namespace-scoped resources — allow all within the permitted namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Deny orphaned resources outside the project's control
+  orphanedResources:
+    warn: true

@@ -1,0 +1,37 @@
+# ArgoCD Application — projects
+#
+# Syncs the AppProject definitions from argocd/projects/ into the cluster.
+# This ensures the publishhub AppProject exists before the publishhub
+# Application attempts to use it.
+#
+# Managed by the bootstrap Application (App of Apps pattern, Requirement 8.2).
+#
+# Repository URL (Requirement 8.7):
+#   The repoURL below must match bootstrap.yaml and other manifests.
+#   See argocd/config.yaml for the one-liner to update all manifests when forking.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: publishhub-projects
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # --- REPO URL (single configurable location — Requirement 8.7) ---
+    repoURL: https://github.com/hamdani2020/PublishHub.git
+    targetRevision: HEAD
+    path: argocd/projects
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

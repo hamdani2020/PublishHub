@@ -1,0 +1,36 @@
+# ArgoCD Bootstrap — App of Apps
+#
+# This is the ONLY manifest applied by hand (via `make argocd-sync`).
+# It watches argocd/applications/ and automatically creates every Application
+# defined there, including the publishhub Application itself.
+#
+# Repository URL (Requirement 8.7):
+#   The repoURL below is the single value to change when forking this project.
+#   See argocd/config.yaml for the canonical reference and a one-liner to update
+#   all manifests at once.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bootstrap
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # --- REPO URL (single configurable location — Requirement 8.7) ---
+    repoURL: https://github.com/hamdani2020/PublishHub.git
+    targetRevision: HEAD
+    path: argocd/applications
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

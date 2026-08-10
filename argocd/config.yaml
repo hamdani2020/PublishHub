@@ -1,0 +1,16 @@
+# ArgoCD Configuration — Single Source of Truth for Repository URL
+#
+# Requirement 8.7: The repository URL appears in exactly one conceptual location.
+# Every ArgoCD manifest in this directory tree uses the same repoURL value below.
+# When forking this project, update ONLY this value and then grep-replace across
+# the argocd/ directory:
+#
+#   OLD=https://github.com/your-org/publishhub.git
+#   NEW=https://github.com/your-fork/publishhub.git
+#   grep -rl "$OLD" argocd/ | xargs sed -i'' -e "s|$OLD|$NEW|g"
+#
+# This keeps the fork workflow to a single find-and-replace rather than editing
+# multiple files by hand.
+
+repoURL: https://github.com/hamdani2020/PublishHub.git
+targetRevision: HEAD

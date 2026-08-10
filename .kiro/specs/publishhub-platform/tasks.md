@@ -214,26 +214,26 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Verify `helm lint` and `helm template` pass for the default and production values files
   - _Requirements: 7.4, 7.2, 10.6_
 
-- [~] 10. Platform layer and GitOps
-- [~] 10.1 Implement the platform-install target
+- [x] 10. Platform layer and GitOps
+- [x] 10.1 Implement the platform-install target
   - Install ArgoCD, KEDA, and Argo Rollouts into their own namespaces with pinned chart or manifest versions
   - Wait for each component's readiness before returning
   - Verify all expected pods reach Running in `argocd`, `keda`, and `argo-rollouts`
   - _Requirements: 8.1_
 
-- [~] 10.2 Write the ArgoCD Project and Application manifests
+- [x] 10.2 Write the ArgoCD Project and Application manifests
   - Define the AppProject restricting source repositories, destination namespaces, and cluster-scoped resource kinds
   - Write `bootstrap.yaml` following App of Apps and the `publishhub` Application with automated sync, self-heal, and prune
   - Thread the repository URL through a single configurable location
   - _Requirements: 8.2, 8.3, 8.4, 8.7_
 
-- [~] 10.3 Implement the sync, access, and credential targets
+- [x] 10.3 Implement the sync, access, and credential targets
   - Implement `argocd-sync` applying the bootstrap Application, plus the port-forward targets for ArgoCD, web, and API
   - Implement `argocd-password` reading the initial admin secret without writing it to a tracked file
   - Verify both Applications appear, all `publishhub` pods run, and the ScaledObject exists
   - _Requirements: 8.2, 8.3, 8.6_
 
-- [~] 10.4 Write the post-deploy smoke test script
+- [x] 10.4 Write the post-deploy smoke test script
   - Assert every pod is ready, the ScaledObject is ready, `/health` returns 200, and one submitted post reaches a terminal status
   - Verify self-healing by mutating a live resource and confirming ArgoCD restores it
   - _Requirements: 8.5, 9.1_
