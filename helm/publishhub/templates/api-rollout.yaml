@@ -15,6 +15,10 @@ spec:
     canary:
       canaryService: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-canary
       stableService: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-stable
+      analysis:
+        templates:
+          - templateName: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-analysis
+        startingStep: 2
       steps:
         - setWeight: 10
         - pause: {}

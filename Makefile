@@ -286,6 +286,10 @@ api-port-forward: require-kubectl ## Forward the API to localhost:8081
 	@printf '  Press Ctrl-C to stop.\n\n'
 	@kubectl port-forward svc/publishhub-api -n $(APP_NAMESPACE) 8081:8080
 
+.PHONY: rollout-exercise
+rollout-exercise: require-docker require-kubectl ## Exercise the Argo Rollouts canary promote and abort paths
+	@bash scripts/rollout-exercise.sh
+
 ##@ Quality gates
 
 .PHONY: lint

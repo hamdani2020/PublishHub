@@ -248,13 +248,13 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Assert no job is lost or duplicated across a scale-down, and surface HPA, ScaledObject, and KEDA operator state on failure
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 9.7_
 
-- [ ] 12. Progressive delivery
-- [~] 12.1 Configure the canary strategy and analysis
+- [x] 12. Progressive delivery
+- [x] 12.1 Configure the canary strategy and analysis
   - Implement the six-step weight and pause sequence from the design
   - Add the Datadog-backed `AnalysisTemplate` with a local job-based fallback probe, wired so a failing check auto-aborts
   - _Requirements: 10.1, 10.2, 10.4_
 
-- [~] 12.2 Write the rollout exercise script
+- [x] 12.2 Write the rollout exercise script
   - Build and push a `v2` API image, set it on the Rollout, and report step, weights, and per-version images
   - Cover both promote and abort paths, asserting abort returns all traffic to stable
   - _Requirements: 10.2, 10.3, 10.5_

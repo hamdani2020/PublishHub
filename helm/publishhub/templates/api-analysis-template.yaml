@@ -1,0 +1,45 @@
+{{- if .Values.api.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-analysis
+  labels:
+    {{- include "publishhub.componentLabels" (dict "context" . "component" "api") | nindent 4 }}
+spec:
+  metrics:
+    {{- if .Values.observability.enabled }}
+    # Datadog-backed metric: API 5xx error rate over 5 minutes
+    - name: api-error-rate
+      interval: 30s
+      count: 5
+      successCondition: result[0] < 0.01
+      failureLimit: 2
+      provider:
+        datadog:
+          apiVersion: v2
+          query: >-
+            sum:publishhub.api.requests{service:{{ .Values.observability.datadog.service }},status:5xx,env:{{ .Values.observability.datadog.env }}}.as_count()
+            / sum:publishhub.api.requests{service:{{ .Values.observability.datadog.service }},env:{{ .Values.observability.datadog.env }}}.as_count()
+    {{- else }}
+    # Job-based fallback probe: curl the canary health endpoint
+    - name: canary-health-check
+      interval: 15s
+      count: 5
+      successCondition: result.exitCode == 0
+      failureLimit: 2
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: health-probe
+                    image: curlimages/curl:8.7.1
+                    command:
+                      - curl
+                      - -sf
+                      - http://{{ include "publishhub.componentFullname" (dict "context" . "component" "api") }}-canary:{{ .Values.api.port }}/health
+    {{- end }}
+{{- end }}

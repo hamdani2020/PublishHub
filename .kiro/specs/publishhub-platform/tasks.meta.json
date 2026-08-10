@@ -585,6 +585,16 @@
         "executionId": "64e42a62-bb3b-41f9-b68f-8fde0c930305",
         "chatSessionId": "sess_62c1a4dc-fff8-4f04-a445-44a5fa4d56ce",
         "timestamp": 1786358236098
+      },
+      {
+        "executionId": "9139739d-fe91-4940-ac58-dddfd11cb76b",
+        "chatSessionId": "sess_367e8a14-ab72-4772-98fd-b25b35e8b30a",
+        "timestamp": 1786369028326
+      },
+      {
+        "executionId": "9139739d-fe91-4940-ac58-dddfd11cb76b",
+        "chatSessionId": "sess_367e8a14-ab72-4772-98fd-b25b35e8b30a",
+        "timestamp": 1786369220773
       }
     ],
     "12.2 Write the rollout exercise script": [
@@ -592,6 +602,16 @@
         "executionId": "64e42a62-bb3b-41f9-b68f-8fde0c930305",
         "chatSessionId": "sess_62c1a4dc-fff8-4f04-a445-44a5fa4d56ce",
         "timestamp": 1786358236276
+      },
+      {
+        "executionId": "9139739d-fe91-4940-ac58-dddfd11cb76b",
+        "chatSessionId": "sess_367e8a14-ab72-4772-98fd-b25b35e8b30a",
+        "timestamp": 1786369225426
+      },
+      {
+        "executionId": "9139739d-fe91-4940-ac58-dddfd11cb76b",
+        "chatSessionId": "sess_367e8a14-ab72-4772-98fd-b25b35e8b30a",
+        "timestamp": 1786369574307
       }
     ],
     "13.1 Scaffold the CLI package": [
@@ -746,6 +766,13 @@
         "executionId": "3c0b726f-253f-4e14-b67f-9e28de1eb965",
         "chatSessionId": "sess_5f5ce3c8-3a1d-4e41-9a26-9608c3b0d551",
         "timestamp": 1786368758393
+      }
+    ],
+    "12. Progressive delivery": [
+      {
+        "executionId": "9139739d-fe91-4940-ac58-dddfd11cb76b",
+        "chatSessionId": "sess_367e8a14-ab72-4772-98fd-b25b35e8b30a",
+        "timestamp": 1786369574464
       }
     ]
   }
