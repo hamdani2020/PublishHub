@@ -18,6 +18,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10001
       containers:
         - name: worker
           image: {{ include "publishhub.image" (dict "image" .Values.worker.image "tag" .Values.global.image.tag) }}
@@ -77,6 +78,9 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
@@ -84,3 +88,6 @@ spec:
             capabilities:
               drop:
                 - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}

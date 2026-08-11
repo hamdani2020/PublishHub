@@ -18,6 +18,7 @@ spec:
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
+        runAsUser: 101
       containers:
         - name: web
           image: {{ include "publishhub.image" (dict "image" .Values.web.image "tag" .Values.global.image.tag) }}

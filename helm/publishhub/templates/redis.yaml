@@ -18,14 +18,20 @@ spec:
       terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
       containers:
         - name: redis
           image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
           imagePullPolicy: IfNotPresent
+          command: ["redis-server", "--dir", "/data"]
           ports:
             - name: redis
               containerPort: {{ .Values.redis.port }}
               protocol: TCP
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
           livenessProbe:
             exec:
               command:
@@ -48,11 +54,15 @@ spec:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           securityContext:
             runAsNonRoot: true
+            runAsUser: 999
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
+      volumes:
+        - name: redis-data
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
