@@ -16,7 +16,7 @@ spec:
     {{- if eq .Values.queue.backend "redis" }}
     - type: redis
       metadata:
-        addressFromEnv: REDIS_URL
+        address: {{ printf "%s-redis:%d" (include "publishhub.fullname" .) (.Values.redis.port | int) | quote }}
         listName: "publishhub:jobs"
         listLength: {{ .Values.worker.keda.listLength | quote }}
     {{- end }}
