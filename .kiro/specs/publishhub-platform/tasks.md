@@ -259,25 +259,25 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Cover both promote and abort paths, asserting abort returns all traffic to stable
   - _Requirements: 10.2, 10.3, 10.5_
 
-- [ ] 13. Developer CLI
-- [~] 13.1 Scaffold the CLI package
+- [x] 13. Developer CLI
+- [x] 13.1 Scaffold the CLI package
   - Create `setup.py` with the `publishctl` entry point and pinned `click` and `rich` dependencies
   - Implement the subprocess helper using argument lists, surfacing exit codes and stderr
   - _Requirements: 11.1, 11.8, 11.9_
 
-- [~] 13.2 Implement the doctor and environment commands
+- [x] 13.2 Implement the doctor and environment commands
   - `doctor` verifies each prerequisite and reports the missing tool with its install command
   - `env start` and `env stop` orchestrate the full lifecycle with per-stage progress
   - _Requirements: 11.2, 11.3, 11.8, 1.6_
 
-- [~] 13.3 Implement the operational commands
+- [x] 13.3 Implement the operational commands
   - `status` summarizes cluster, Application, pod, and ScaledObject state
   - `logs` streams a service's logs with tail and follow options
   - `publish` submits a post through the API and prints the response
   - `scale` and `rollout status|promote|abort` wrap their respective operations
   - _Requirements: 11.4, 11.5, 11.6_
 
-- [~] 13.4 Verify installation and help output
+- [x] 13.4 Verify installation and help output
   - Install with `pip install -e .`, confirm `publishctl` resolves on PATH, and confirm `--help` lists every command
   - _Requirements: 11.1, 11.9_
 
