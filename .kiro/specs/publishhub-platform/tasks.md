@@ -281,21 +281,21 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Install with `pip install -e .`, confirm `publishctl` resolves on PATH, and confirm `--help` lists every command
   - _Requirements: 11.1, 11.9_
 
-- [ ] 14. AI incident analyzer
-- [~] 14.1 Implement diagnostic collection with redaction
+- [x] 14. AI incident analyzer
+- [x] 14.1 Implement diagnostic collection with redaction
   - Collect pod description, recent logs, previous-container logs, and related events, recording rather than aborting on individual `kubectl` failures
   - Implement the secret redaction pass over all collected text before any transmission
   - Truncate each section to its documented character budget
   - Write unit tests for redaction patterns, truncation bounds, and the kubectl-failure path
   - _Requirements: 12.1, 12.5, 12.6_
 
-- [~] 14.2 Implement Bedrock analysis with mapped error handling
+- [x] 14.2 Implement Bedrock analysis with mapped error handling
   - Invoke Claude 3 Haiku with the structured SRE prompt requesting summary, ranked hypotheses, fix, severity, and category
   - Authenticate through the ambient AWS credential chain with no repository-stored key
   - Map each Bedrock and credential error to its actionable diagnostic and exit non-zero
   - _Requirements: 12.2, 12.4, 12.7_
 
-- [~] 14.3 Implement report output and CLI integration
+- [x] 14.3 Implement report output and CLI integration
   - Render the formatted text report and implement the JSON output mode
   - Add the `publishctl incident` command delegating to the analyzer
   - Verify against a deliberately crashed pod that the report is produced end to end

@@ -293,15 +293,20 @@ def rollout_abort() -> None:
 @cli.command()
 @click.option("--pod", required=True, help="Name of the pod to analyze.")
 @click.option("--namespace", default="publishhub", help="Kubernetes namespace.")
-def incident(pod: str, namespace: str) -> None:
+@click.option("--json", "json_output", is_flag=True, help="Output in JSON format.")
+@click.option("--collect-only", is_flag=True, help="Only collect diagnostics; skip Bedrock analysis.")
+def incident(pod: str, namespace: str, json_output: bool, collect_only: bool) -> None:
     """Invoke the AI incident analyzer for a pod."""
-    run(
-        [
-            "python3",
-            "scripts/ai-incident-analyzer.py",
-            "--pod",
-            pod,
-            "--namespace",
-            namespace,
-        ]
-    )
+    cmd = [
+        "python3",
+        "scripts/ai-incident-analyzer.py",
+        "--pod",
+        pod,
+        "--namespace",
+        namespace,
+    ]
+    if json_output:
+        cmd.append("--json")
+    if collect_only:
+        cmd.append("--collect-only")
+    run(cmd)
