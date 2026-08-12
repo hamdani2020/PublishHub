@@ -1,0 +1,116 @@
+# Datadog Agent Helm Chart Values
+# Install with: helm install datadog-agent datadog/datadog -f observability/datadog/values.yaml -n datadog --create-namespace
+#
+# Prerequisites:
+#   1. Create the API key secret before installing:
+#      kubectl create secret generic datadog-api-key \
+#        --from-literal=api-key=<YOUR_API_KEY> \
+#        -n datadog
+#
+#   2. (Optional) Create the app key secret for dashboards/monitors API:
+#      kubectl create secret generic datadog-app-key \
+#        --from-literal=app-key=<YOUR_APP_KEY> \
+#        -n datadog
+#
+# NEVER commit Datadog API or app keys to the repository.
+
+# --- Credentials (from Kubernetes Secrets) ---
+datadog:
+  apiKeyExistingSecret: datadog-api-key
+  appKeyExistingSecret: datadog-app-key
+
+  # --- Site / Region ---
+  site: datadoghq.com
+
+  # --- Cluster-level metrics ---
+  collectEvents: true
+  leaderElection: true
+  kubeStateMetricsEnabled: true
+
+  # --- Log collection ---
+  logs:
+    enabled: true
+    containerCollectAll: false
+    # Scope log collection with annotations on publishhub pods;
+    # containerCollectAll is false so only annotated pods are collected.
+    # Pod annotations needed:
+    #   ad.datadoghq.com/<container>.logs: '[{"source":"<source>","service":"<service>"}]'
+
+  # --- APM (distributed tracing) ---
+  apm:
+    portEnabled: true
+    socketEnabled: true
+
+  # --- Process monitoring (lightweight) ---
+  processAgent:
+    enabled: true
+    processCollection: false
+
+  # --- Dogstatsd for custom metrics ---
+  dogstatsd:
+    useHostPort: true
+    nonLocalTraffic: true
+
+  # --- Namespace scoping ---
+  # Constrain autodiscovery and metric collection to the publishhub namespace
+  namespaces:
+    - publishhub
+
+  # --- Unified tagging ---
+  env: production
+  tags:
+    - "project:publishhub"
+
+# --- Cluster Agent ---
+clusterAgent:
+  enabled: true
+  replicas: 1
+  # Admission controller injects DD_AGENT_HOST, DD_ENTITY_ID, and tracing
+  # environment variables into application pods automatically.
+  admissionController:
+    enabled: true
+    mutateUnlabelled: false
+    # Only mutate pods with the label: admission.datadoghq.com/enabled: "true"
+  metricsProvider:
+    enabled: false
+
+# --- Node Agent ---
+agents:
+  # Tolerate all taints so the agent runs on every node
+  tolerations:
+    - operator: Exists
+
+  containers:
+    agent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    traceAgent:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+  # Volume mount for container logs
+  volumeMounts:
+    - name: container-logs
+      mountPath: /var/log/containers
+      readOnly: true
+    - name: pod-logs
+      mountPath: /var/log/pods
+      readOnly: true
+
+  volumes:
+    - name: container-logs
+      hostPath:
+        path: /var/log/containers
+    - name: pod-logs
+      hostPath:
+        path: /var/log/pods

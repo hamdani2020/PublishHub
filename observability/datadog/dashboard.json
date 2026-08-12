@@ -1,0 +1,381 @@
+{
+  "title": "PublishHub Platform Overview",
+  "description": "Operational dashboard for PublishHub — request rate, latency, queue depth, and worker scaling.",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "default": "production",
+      "available_values": ["production", "staging"]
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "title": "API Overview",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "API Request Rate",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "per_minute(query1)" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:publishhub.api.requests{env:$env}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true
+              },
+              "markers": []
+            }
+          },
+          {
+            "definition": {
+              "title": "API Error Rate (5xx / total)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "default_zero(query1) / query2 * 100" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:publishhub.api.errors{env:$env}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "sum:publishhub.api.requests{env:$env}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "label": "% errors"
+              },
+              "markers": [
+                {
+                  "value": "y = 1",
+                  "display_type": "error dashed",
+                  "label": "1% threshold"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Posts Submitted (by platform)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "per_minute(query1)" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:publishhub.posts.submitted{env:$env} by {platform}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Latency",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Job Duration (p50 / p95 / p99)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "query1", "alias": "p50" },
+                    { "formula": "query2", "alias": "p95" },
+                    { "formula": "query3", "alias": "p99" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "p50:publishhub.jobs.duration{env:$env}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "p95:publishhub.jobs.duration{env:$env}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query3",
+                      "query": "p99:publishhub.jobs.duration{env:$env}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "label": "ms"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "API Request Latency (APM trace)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "query1", "alias": "p50" },
+                    { "formula": "query2", "alias": "p95" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "p50:trace.express.request.duration{service:publishhub-api,env:$env}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "p95:trace.express.request.duration{service:publishhub-api,env:$env}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "label": "seconds"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Queue & Workers",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Queue Depth",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "query1" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:publishhub.queue.depth{env:$env} by {backend}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "label": "messages"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Worker Replica Count",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "query1", "alias": "desired" },
+                    { "formula": "query2", "alias": "ready" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:kubernetes_state.deployment.replicas_desired{deployment:publishhub-worker,namespace:publishhub,env:$env}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "avg:kubernetes_state.deployment.replicas_ready{deployment:publishhub-worker,namespace:publishhub,env:$env}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "green",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "min": "0",
+                "label": "replicas"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Jobs Processed vs Failed (per minute)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "per_minute(query1)", "alias": "processed" },
+                    { "formula": "per_minute(query2)", "alias": "failed" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:publishhub.jobs.processed{env:$env}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "sum:publishhub.jobs.failed{env:$env}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Worker Failure Rate (%)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [
+                    { "formula": "default_zero(query1) / query2 * 100" }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:publishhub.jobs.failed{env:$env}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "sum:publishhub.jobs.processed{env:$env}.as_count()"
+                    }
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 2,
+              "autoscale": false,
+              "custom_unit": "%"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notify_list": [],
+  "is_read_only": false
+}

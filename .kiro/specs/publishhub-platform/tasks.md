@@ -326,18 +326,18 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Do not add any make target or CI job that applies or destroys without confirmation
   - _Requirements: 13.6, 13.8, 16.3_
 
-- [ ] 16. Observability
-- [~] 16.1 Write the Datadog agent configuration
+- [x] 16. Observability
+- [x] 16.1 Write the Datadog agent configuration
   - Provide the agent values enabling cluster metrics, log collection, and APM for the `publishhub` namespace
   - Supply credentials through a Kubernetes Secret reference, never a committed file
   - _Requirements: 14.1, 14.7_
 
-- [~] 16.2 Verify distributed tracing across the API and worker
+- [x] 16.2 Verify distributed tracing across the API and worker
   - Confirm a publish request produces a single trace spanning the API handler and the worker's processing of that job
   - Confirm logs carry trace identifiers so log-trace correlation works
   - _Requirements: 14.2, 14.3_
 
-- [~] 16.3 Define monitors and a dashboard as code
+- [x] 16.3 Define monitors and a dashboard as code
   - Write `monitors.yaml` for API error rate, worker failure rate, queue depth growth, pod crash looping, and workers stuck at zero with a non-empty queue
   - Write the dashboard definition covering request rate, latency, queue depth, and worker replica count
   - _Requirements: 14.5_

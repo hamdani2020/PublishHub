@@ -1,0 +1,183 @@
+# Datadog Monitor Definitions (Requirement 14.5)
+#
+# These monitors are stored as code and can be applied using:
+#   - Datadog Terraform provider (datadog_monitor resource)
+#   - Datadog API (POST /api/v1/monitor)
+#   - datadog-operator MonitorSpec CRD
+#
+# Each entry maps directly to the Datadog Monitor API schema.
+# See: https://docs.datadoghq.com/api/latest/monitors/#create-a-monitor
+
+monitors:
+  # --- API 5xx rate above 1% over 5 minutes ---
+  - name: "[PublishHub] API error rate above 1%"
+    type: query alert
+    query: >-
+      sum(last_5m):default_zero(sum:publishhub.api.errors{env:production}.as_count())
+      / sum:publishhub.api.requests{env:production}.as_count() > 0.01
+    message: |
+      {{#is_alert}}
+      API 5xx error rate has exceeded 1% over the last 5 minutes.
+
+      Current rate: {{value}}
+      Threshold: 0.01 (1%)
+
+      Investigate:
+        - Check API pod logs: `publishctl logs --service api --tail 100`
+        - Check recent deployments: `publishctl rollout status`
+        - If a canary is active, consider aborting: `publishctl rollout abort`
+
+      @slack-publishhub-alerts
+      {{/is_alert}}
+      {{#is_recovery}}
+      API error rate has recovered to normal levels.
+      {{/is_recovery}}
+    tags:
+      - "service:publishhub-api"
+      - "env:production"
+      - "team:platform"
+    options:
+      thresholds:
+        critical: 0.01
+        warning: 0.005
+      notify_no_data: false
+      evaluation_delay: 60
+      new_group_delay: 60
+      renotify_interval: 300
+      escalation_message: "API error rate still above 1% — escalating."
+
+  # --- Worker failure rate above 5% ---
+  - name: "[PublishHub] Worker failure rate above 5%"
+    type: query alert
+    query: >-
+      sum(last_5m):default_zero(sum:publishhub.jobs.failed{env:production}.as_count())
+      / sum:publishhub.jobs.processed{env:production}.as_count() > 0.05
+    message: |
+      {{#is_alert}}
+      Worker job failure rate has exceeded 5% over the last 5 minutes.
+
+      Current rate: {{value}}
+      Threshold: 0.05 (5%)
+
+      Investigate:
+        - Check worker logs: `publishctl logs --service worker --tail 100`
+        - Check dead-letter queue for poison messages
+        - Review recent job payloads for schema drift
+
+      @slack-publishhub-alerts
+      {{/is_alert}}
+      {{#is_recovery}}
+      Worker failure rate has recovered to normal levels.
+      {{/is_recovery}}
+    tags:
+      - "service:publishhub-worker"
+      - "env:production"
+      - "team:platform"
+    options:
+      thresholds:
+        critical: 0.05
+        warning: 0.03
+      notify_no_data: false
+      evaluation_delay: 60
+      new_group_delay: 60
+      renotify_interval: 300
+      escalation_message: "Worker failure rate still above 5% — escalating."
+
+  # --- Queue depth growing for 10 minutes ---
+  - name: "[PublishHub] Queue depth growing for 10 minutes"
+    type: query alert
+    query: >-
+      avg(last_10m):monotonic_diff(avg:publishhub.queue.depth{env:production}) > 0
+    message: |
+      {{#is_alert}}
+      Queue depth has been continuously growing for the last 10 minutes.
+
+      This indicates workers are not keeping up with incoming jobs.
+
+      Investigate:
+        - Check worker replica count: `kubectl get hpa -n publishhub`
+        - Check KEDA ScaledObject status: `kubectl get scaledobject -n publishhub`
+        - Verify workers are healthy: `publishctl status`
+        - Check if workers are stuck or crash-looping
+
+      @slack-publishhub-alerts
+      {{/is_alert}}
+      {{#is_recovery}}
+      Queue depth is no longer growing — workers are keeping up.
+      {{/is_recovery}}
+    tags:
+      - "service:publishhub-worker"
+      - "env:production"
+      - "team:platform"
+    options:
+      thresholds:
+        critical: 0
+      notify_no_data: false
+      evaluation_delay: 60
+      renotify_interval: 600
+      escalation_message: "Queue is still growing — workers may be stalled."
+
+  # --- Pod crash looping (more than 3 restarts in 15 minutes) ---
+  - name: "[PublishHub] Pod crash looping"
+    type: query alert
+    query: >-
+      max(last_15m):diff(max:kubernetes_state.container.restarts{namespace:publishhub} by {pod}) > 3
+    message: |
+      {{#is_alert}}
+      Pod {{pod.name}} in namespace publishhub has restarted more than 3 times
+      in the last 15 minutes.
+
+      Investigate:
+        - Describe the pod: `kubectl describe pod {{pod.name}} -n publishhub`
+        - Check previous logs: `kubectl logs {{pod.name}} -n publishhub --previous`
+        - Run AI incident analysis: `publishctl incident --pod {{pod.name}}`
+
+      @slack-publishhub-alerts
+      {{/is_alert}}
+      {{#is_recovery}}
+      Pod {{pod.name}} has stopped crash-looping.
+      {{/is_recovery}}
+    tags:
+      - "env:production"
+      - "team:platform"
+    options:
+      thresholds:
+        critical: 3
+        warning: 2
+      notify_no_data: false
+      evaluation_delay: 60
+      renotify_interval: 300
+
+  # --- Workers stuck at zero replicas while queue is non-empty ---
+  - name: "[PublishHub] Workers at zero with non-empty queue"
+    type: query alert
+    query: >-
+      min(last_5m):avg:kubernetes_state.deployment.replicas{deployment:publishhub-worker,namespace:publishhub,env:production} == 0
+      && min(last_5m):avg:publishhub.queue.depth{env:production} > 0
+    message: |
+      {{#is_alert}}
+      Worker replicas have been at zero for 5 minutes while the queue has
+      pending messages. KEDA should have scaled workers up.
+
+      Investigate:
+        - Check KEDA operator logs: `kubectl logs -n keda -l app=keda-operator --tail=50`
+        - Check ScaledObject status: `kubectl get scaledobject -n publishhub -o yaml`
+        - Check HPA: `kubectl get hpa -n publishhub`
+        - Verify queue connectivity from the cluster
+
+      @slack-publishhub-alerts
+      {{/is_alert}}
+      {{#is_recovery}}
+      Workers have scaled up — queue is being processed.
+      {{/is_recovery}}
+    tags:
+      - "service:publishhub-worker"
+      - "env:production"
+      - "team:platform"
+    options:
+      thresholds:
+        critical: 0
+      notify_no_data: false
+      evaluation_delay: 120
+      renotify_interval: 300
+      escalation_message: "Workers still at zero — KEDA may be broken."
