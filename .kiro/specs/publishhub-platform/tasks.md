@@ -301,26 +301,26 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Verify against a deliberately crashed pod that the report is produced end to end
   - _Requirements: 12.3, 11.7_
 
-- [ ] 15. AWS infrastructure as code
-- [~] 15.1 Write the VPC and EKS modules
+- [x] 15. AWS infrastructure as code
+- [x] 15.1 Write the VPC and EKS modules
   - VPC with public and private subnets across three AZs and a single NAT gateway
   - EKS with managed node groups defaulting to Spot capacity and ARM instance types, with the OIDC provider enabled
   - _Requirements: 13.1, 13.3_
 
-- [~] 15.2 Write the SQS, ECR, and IAM modules
+- [x] 15.2 Write the SQS, ECR, and IAM modules
   - SQS main queue plus DLQ with a redrive policy
   - One ECR repository per service with a lifecycle policy expiring untagged and surplus images
   - Least-privilege IRSA roles for the KEDA SQS scaler and the worker, plus the GitHub OIDC role, with no long-lived keys
   - _Requirements: 13.1, 13.2, 13.3_
 
-- [~] 15.3 Compose the root configuration, outputs, and backend example
+- [x] 15.3 Compose the root configuration, outputs, and backend example
   - Wire the modules in `main.tf` with variables and version constraints
   - Output cluster name, region, ECR repository URLs, and the SQS queue URL
   - Provide `backend.tf.example` for S3 state with DynamoDB locking, and confirm state and tfvars are gitignored
   - Verify `terraform fmt -check` and `terraform validate` pass
   - _Requirements: 13.4, 13.5, 13.7_
 
-- [~] 15.4 Document the apply and destroy procedure **[manual]**
+- [x] 15.4 Document the apply and destroy procedure **[manual]**
   - Write the AWS deployment runbook covering plan review, apply, `aws eks update-kubeconfig`, and production values
   - State the daily cost estimate and make `terraform destroy` a prominent, explicit teardown step
   - Do not add any make target or CI job that applies or destroys without confirmation

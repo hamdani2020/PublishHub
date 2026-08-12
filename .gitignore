@@ -28,6 +28,7 @@ venv/
 terraform.tfstate
 terraform.tfstate.*
 .terraform/
+backend.tf
 crash.log
 
 # --- Kubernetes ---
