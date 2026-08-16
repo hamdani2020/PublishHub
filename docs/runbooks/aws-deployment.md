@@ -294,7 +294,44 @@ Ensure the ArgoCD Application references your production values file, then sync:
 make argocd-sync
 ```
 
-### 6.3 Verify deployment
+### 6.3 Access ArgoCD Dashboard (EKS)
+
+ArgoCD runs as a `ClusterIP` service — it is not exposed to the internet. Access
+it via `kubectl port-forward`:
+
+```bash
+# 1. Point kubectl at the EKS cluster (if not already configured)
+aws eks update-kubeconfig \
+  --name $(terraform output -raw cluster_name) \
+  --region $(terraform output -raw aws_region)
+
+# 2. Get the initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+
+# 3. Port-forward the ArgoCD server (keep this terminal open)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Then open https://localhost:8080 in your browser (accept the self-signed
+certificate warning). Log in with:
+
+- **Username:** `admin`
+- **Password:** the value from step 2
+
+For ArgoCD CLI access:
+
+```bash
+argocd login localhost:8080 --insecure --username admin \
+  --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+```
+
+> **Security note:** ArgoCD is intentionally kept as ClusterIP. Do not expose it
+> via LoadBalancer or Ingress without adding TLS termination and authentication.
+> Port-forwarding ensures only users with valid kubectl/EKS credentials can
+> reach the dashboard.
+
+### 6.4 Verify deployment
 
 ```bash
 kubectl get pods -n publishhub

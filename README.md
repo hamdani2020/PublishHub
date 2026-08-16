@@ -85,6 +85,27 @@ make argocd-password     # print the admin password
 make argocd-port-forward # https://localhost:8443
 ```
 
+#### Accessing ArgoCD on EKS
+
+When running on a remote EKS cluster, ArgoCD is not exposed to the internet.
+Access it via port-forward:
+
+```bash
+# Point kubectl at the EKS cluster
+aws eks update-kubeconfig --name publishhub-production --region us-east-1
+
+# Get the admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+
+# Port-forward (keep terminal open)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Open https://localhost:8080 — login with `admin` and the password above.
+
+See the [AWS Deployment Runbook](docs/runbooks/aws-deployment.md) for full details.
+
 Tear everything down:
 
 ```bash
