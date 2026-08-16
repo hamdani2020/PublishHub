@@ -1,0 +1,30 @@
+# Account-specific overrides for PublishHub Helm chart.
+# Copy this file to values-account.yaml and fill in your AWS account values.
+# values-account.yaml is gitignored and must NEVER be committed.
+#
+# Usage:
+#   helm upgrade publishhub ./helm/publishhub \
+#     -f values.yaml -f values-production.yaml -f values-account.yaml
+
+# --- ECR Image Repositories ---
+api:
+  image:
+    repository: "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/publishhub-api"
+
+worker:
+  image:
+    repository: "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/publishhub-worker"
+
+web:
+  image:
+    repository: "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/publishhub-web"
+
+# --- SQS ---
+sqs:
+  queueUrl: "https://sqs.<REGION>.amazonaws.com/<AWS_ACCOUNT_ID>/publishhub-jobs-production"
+  region: "<REGION>"
+
+# --- Service Account (IRSA) ---
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::<AWS_ACCOUNT_ID>:role/publishhub-irsa"

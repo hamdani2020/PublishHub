@@ -342,29 +342,29 @@ Tasks marked **[manual]** contain steps that require a human decision or incur c
   - Write the dashboard definition covering request rate, latency, queue depth, and worker replica count
   - _Requirements: 14.5_
 
-- [ ] 17. CI/CD
-- [~] 17.1 Write the CI workflow
+- [x] 17. CI/CD
+- [x] 17.1 Write the CI workflow
   - Run lint, typecheck, and unit tests per service; `helm lint` and `template` per values file; `terraform fmt -check` and `validate`
   - Build images without pushing on pull requests and scan them with Trivy, failing on critical findings
   - _Requirements: 15.1, 15.6_
 
-- [~] 17.2 Write the deploy workflow
+- [x] 17.2 Write the deploy workflow
   - Add a preflight step asserting every required secret and variable is present, failing with the missing name
   - Assume the AWS role via OIDC, then build and push all three images to ECR tagged with the commit SHA
   - Update the Helm values image tags with `yq` and commit back, guarded against triggering an infinite build loop
   - _Requirements: 15.2, 15.3, 15.4, 15.5, 15.7_
 
-- [ ] 18. Documentation
-- [~] 18.1 Write the README and architecture document
+- [x] 18. Documentation
+- [x] 18.1 Write the README and architecture document
   - Cover architecture, technology rationale, quick start, the demo flow, and the explicit statement that the API is unauthenticated
   - _Requirements: 16.1, 2.9_
 
-- [~] 18.2 Write the local development guide and verify it from clean
+- [x] 18.2 Write the local development guide and verify it from clean
   - Document every step from prerequisites to a running stack, then follow it end to end and correct any undocumented action
   - Verify all referenced commands, make targets, and paths match the repository
   - _Requirements: 16.2, 16.4_
 
-- [~] 18.3 Write the operational runbooks
+- [x] 18.3 Write the operational runbooks
   - Cover queue backlog, worker crash looping, failed ArgoCD sync, failed canary rollout, and Bedrock access denial
   - Add secret-handling guidance to the contributing documentation
   - _Requirements: 16.3, 16.5_

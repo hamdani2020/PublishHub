@@ -16,6 +16,12 @@ variable "eks_oidc_issuer_url" {
   type        = string
 }
 
+variable "eks_oidc_provider_arn" {
+  description = "ARN of the EKS OIDC provider (passed directly to avoid data source race conditions)."
+  type        = string
+}
+
+
 # --- KEDA ---
 
 variable "keda_namespace" {

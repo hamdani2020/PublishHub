@@ -32,3 +32,13 @@ output "github_actions_role_arn" {
   description = "ARN of the IAM role for GitHub Actions OIDC authentication."
   value       = module.iam.github_actions_role_arn
 }
+
+output "worker_role_arn" {
+  description = "ARN of the IAM role for the worker service account (IRSA)."
+  value       = module.iam.worker_role_arn
+}
+
+output "ecr_registry" {
+  description = "ECR registry URL (account_id.dkr.ecr.region.amazonaws.com)."
+  value       = "${module.ecr.registry_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+}

@@ -1,8 +1,3 @@
-################################################################################
-# IAM — IRSA roles (KEDA, Worker) + GitHub Actions OIDC
-# No long-lived access keys are created anywhere in this module.
-################################################################################
-
 locals {
   common_tags = merge(var.tags, {
     Project     = var.project
@@ -10,18 +5,6 @@ locals {
     ManagedBy   = "terraform"
   })
 }
-
-################################################################################
-# Data: EKS OIDC provider (for IRSA trust policies)
-################################################################################
-
-data "aws_iam_openid_connect_provider" "eks" {
-  url = var.eks_oidc_issuer_url
-}
-
-################################################################################
-# KEDA SQS Scaler Role — read-only access to query queue depth
-################################################################################
 
 resource "aws_iam_role" "keda_sqs" {
   name = "${var.project}-keda-sqs-${var.environment}"
@@ -32,7 +15,7 @@ resource "aws_iam_role" "keda_sqs" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = data.aws_iam_openid_connect_provider.eks.arn
+          Federated = var.eks_oidc_provider_arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
@@ -69,10 +52,6 @@ resource "aws_iam_role_policy" "keda_sqs" {
   })
 }
 
-################################################################################
-# Worker Role — consume messages from the queue
-################################################################################
-
 resource "aws_iam_role" "worker" {
   name = "${var.project}-worker-${var.environment}"
 
@@ -82,7 +61,7 @@ resource "aws_iam_role" "worker" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = data.aws_iam_openid_connect_provider.eks.arn
+          Federated = var.eks_oidc_provider_arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
@@ -121,10 +100,6 @@ resource "aws_iam_role_policy" "worker_sqs" {
     ]
   })
 }
-
-################################################################################
-# GitHub Actions OIDC Role — push images to ECR, no long-lived keys
-################################################################################
 
 data "aws_iam_openid_connect_provider" "github" {
   count = var.create_github_oidc_provider ? 0 : 1

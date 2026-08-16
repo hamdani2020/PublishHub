@@ -1,0 +1,168 @@
+# PublishHub Deploy — builds, pushes to ECR, and updates the image tag for ArgoCD.
+#
+# Authenticates via GitHub OIDC (no stored AWS access keys).
+# Only the image tag (a git SHA) is committed back — no account-specific
+# values are ever written to the public repository.
+#
+# Account-specific values (ECR repos, SQS URL, IRSA role ARN) are configured
+# as Helm parameter overrides in the ArgoCD Application resource.
+#
+# Requirement 15.2: Build and push images tagged with commit SHA
+# Requirement 15.3: Update image tag and commit back for GitOps
+# Requirement 15.4: AWS authentication via OIDC role assumption
+# Requirement 15.5: Avoid infinite build loop on commit-back
+# Requirement 15.7: Preflight check for required secrets/variables
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Cancel in-progress deploy runs for the same branch.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write   # Required for OIDC role assumption
+  contents: write   # Required to commit updated image tag
+
+jobs:
+
+  # Guard: skip if this push was made by the deploy bot itself (loop prevention)
+  guard:
+    name: "Guard: loop prevention"
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    steps:
+      - name: Check commit author
+        id: check
+        run: |
+          if [[ "${{ github.event.head_commit.author.name }}" == "github-actions[bot]" ]]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping deploy — commit was made by github-actions[bot]"
+          elif [[ "${{ github.event.head_commit.message }}" == *"[skip ci]"* ]]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping deploy — commit message contains [skip ci]"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Preflight: assert all required secrets and variables are present
+  preflight:
+    name: "Preflight: check configuration"
+    runs-on: ubuntu-latest
+    needs: guard
+    if: needs.guard.outputs.should_deploy == 'true'
+    steps:
+      - name: Assert required secrets and variables
+        run: |
+          missing=()
+
+          # Required secrets
+          if [[ -z "${{ secrets.AWS_ROLE_ARN }}" ]]; then
+            missing+=("secret: AWS_ROLE_ARN")
+          fi
+
+          # Required variables
+          if [[ -z "${{ vars.AWS_REGION }}" ]]; then
+            missing+=("variable: AWS_REGION")
+          fi
+          if [[ -z "${{ vars.ECR_REGISTRY }}" ]]; then
+            missing+=("variable: ECR_REGISTRY")
+          fi
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "::error::Missing required configuration:"
+            for item in "${missing[@]}"; do
+              echo "::error::  - $item"
+            done
+            exit 1
+          fi
+
+          echo "✓ All required secrets and variables are present"
+
+  # Build and push: authenticate to ECR, build all images, push tagged with SHA
+  build-and-push:
+    name: "Build and push images"
+    runs-on: ubuntu-latest
+    needs: preflight
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: api
+            context: apps/api
+            image: publishhub-api
+          - service: worker
+            context: apps/worker
+            image: publishhub-worker
+          - service: web
+            context: apps/web
+            image: publishhub-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ vars.ECR_REGISTRY }}/${{ matrix.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Update image tag: only commit the non-sensitive git SHA tag for ArgoCD
+  update-tag:
+    name: "Update image tag"
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        uses: mikefarah/yq@v4
+
+      - name: Update image tag in values-production.yaml
+        run: |
+          VALUES_FILE="helm/publishhub/values-production.yaml"
+
+          # Only update the image tag (a git SHA — not sensitive)
+          yq -i '.global.image.tag = "${{ github.sha }}"' "$VALUES_FILE"
+          yq -i '.observability.datadog.version = "${{ github.sha }}"' "$VALUES_FILE"
+
+          echo "Updated $VALUES_FILE with tag: ${{ github.sha }}"
+
+      - name: Commit and push updated tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add helm/publishhub/values-production.yaml
+
+          if git diff --cached --quiet; then
+            echo "::notice::No changes to commit — tag already up to date"
+            exit 0
+          fi
+
+          git commit -m "chore: update image tag to ${GITHUB_SHA::7} [skip ci]"
+          git push

@@ -54,12 +54,50 @@ module "iam" {
   project     = var.project
   environment = var.environment
 
-  eks_oidc_issuer_url = "https://${module.eks.oidc_provider_url}"
-  sqs_queue_arns      = [module.sqs.queue_arn, module.sqs.dlq_arn]
-  ecr_repository_arns = values(module.ecr.repository_arns)
-  github_repository   = var.github_repository
+  eks_oidc_issuer_url   = "https://${module.eks.oidc_provider_url}"
+  eks_oidc_provider_arn = module.eks.oidc_provider_arn
+  sqs_queue_arns        = [module.sqs.queue_arn, module.sqs.dlq_arn]
+  ecr_repository_arns   = values(module.ecr.repository_arns)
+  github_repository     = var.github_repository
 
   create_github_oidc_provider = var.create_github_oidc_provider
 
   tags = var.tags
+}
+
+
+# --- ArgoCD Installation ---
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  version          = "7.3.11"
+  namespace        = "argocd"
+  create_namespace = true
+  wait             = true
+  timeout          = 600
+
+  set {
+    name  = "server.service.type"
+    value = "ClusterIP"
+  }
+
+  depends_on = [module.eks]
+}
+
+
+module "argocd_app" {
+  source = "./modules/argocd-app"
+
+  project      = var.project
+  environment  = var.environment
+  cluster_name = module.eks.cluster_name
+  repo_url     = "https://github.com/${var.github_repository}.git"
+
+  ecr_registry  = "${module.ecr.registry_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+  sqs_queue_url = module.sqs.queue_url
+  sqs_region    = var.aws_region
+  irsa_role_arn = module.iam.worker_role_arn
+
+  depends_on = [module.eks, helm_release.argocd]
 }

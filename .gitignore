@@ -25,6 +25,8 @@ venv/
 # --- Terraform ---
 *.tfvars
 *.tfvars.json
+*.tfplan
+tfplan
 terraform.tfstate
 terraform.tfstate.*
 .terraform/
@@ -34,6 +36,11 @@ crash.log
 # --- Kubernetes ---
 kubeconfig
 kubeconfig*
+
+# Generated from Terraform outputs; contains account-specific identifiers
+# (ECR URLs, SQS queue URL, IRSA role ARN). Generate with `make prod-values`.
+# The committed template is values-account.yaml.example.
+helm/publishhub/values-account.yaml
 
 # --- Editors and OS ---
 .DS_Store

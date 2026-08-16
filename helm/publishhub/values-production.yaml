@@ -1,5 +1,9 @@
 # PublishHub Helm Chart - Production (EKS/AWS) overrides
-# Layer this on top of values.yaml: helm install -f values.yaml -f values-production.yaml
+# Layer this on top of values.yaml along with the account-specific overlay:
+#   helm install -f values.yaml -f values-production.yaml -f values-account.yaml
+#
+# Account-specific values (ECR repos, SQS URL, IRSA role ARN) live in
+# values-account.yaml which is gitignored. See values-account.yaml.example.
 
 global:
   image:
@@ -9,12 +13,12 @@ global:
 # --- API Service ---
 api:
   image:
-    repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/publishhub-api
+    repository: ""  # set via values-account.yaml
     tag: ""  # uses global.image.tag
   replicaCount: 2
   env:
     NODE_ENV: production
-    CORS_ORIGINS: "https://publishhub.example.com"
+    CORS_ORIGINS: "https://publishhub.com"
   rollout:
     enabled: true
   autoscaling:
@@ -26,7 +30,7 @@ api:
 # --- Worker Service ---
 worker:
   image:
-    repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/publishhub-worker
+    repository: ""  # set via values-account.yaml
     tag: ""  # uses global.image.tag
   replicaCount: 1
   env:
@@ -45,7 +49,7 @@ worker:
 # --- Web Frontend ---
 web:
   image:
-    repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/publishhub-web
+    repository: ""  # set via values-account.yaml
     tag: ""  # uses global.image.tag
   replicaCount: 2
   env:
@@ -62,8 +66,8 @@ redis:
 
 # --- SQS ---
 sqs:
-  queueUrl: "https://sqs.us-east-1.amazonaws.com/ACCOUNT_ID/publishhub-jobs"
-  region: "us-east-1"
+  queueUrl: ""  # set via values-account.yaml
+  region: ""   # set via values-account.yaml
 
 # --- Observability ---
 observability:
@@ -78,4 +82,4 @@ serviceAccount:
   create: true
   name: ""
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/publishhub-irsa"
+    eks.amazonaws.com/role-arn: ""  # set via values-account.yaml

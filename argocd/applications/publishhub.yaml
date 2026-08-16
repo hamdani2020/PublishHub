@@ -1,14 +1,13 @@
 # ArgoCD Application — publishhub
 #
-# Deploys the Helm chart at helm/publishhub/ to the publishhub namespace with
-# automated sync, self-healing, and pruning (Requirement 8.3).
+# NOTE: This file is a REFERENCE ONLY. The actual ArgoCD Application resource
+# is managed by Terraform (terraform/modules/argocd-app/) which injects
+# account-specific Helm parameters (ECR repos, SQS URL, IRSA role ARN)
+# at apply time. Do not apply this file manually.
 #
-# This file is managed by the bootstrap Application (App of Apps pattern,
-# Requirement 8.2). Do not apply it by hand.
-#
-# Repository URL (Requirement 8.7):
-#   The repoURL below must match bootstrap.yaml and projects/publishhub.yaml.
-#   See argocd/config.yaml for the one-liner to update all manifests when forking.
+# To deploy: run `terraform apply` in the terraform/ directory.
+# The Terraform module creates the Application with the correct parameters
+# sourced from infrastructure outputs.
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -27,11 +26,23 @@ spec:
     targetRevision: HEAD
     path: helm/publishhub
     helm:
-      # Use the default values file (kind/local defaults).
-      # For production, override with values-production.yaml in a separate
-      # Application or via ApplicationSet.
       valueFiles:
         - values.yaml
+        - values-production.yaml
+      # Account-specific values injected at deploy time via ArgoCD.
+      # These are NOT stored in git (public repo). Set them using one of:
+      #   1. `argocd app set publishhub --helm-set ...`
+      #   2. ArgoCD UI → Parameters
+      #   3. An ArgoCD secret plugin or AVP (Argo Vault Plugin)
+      #
+      # Required parameters:
+      #   api.image.repository        = <ECR_REGISTRY>/publishhub-api
+      #   worker.image.repository     = <ECR_REGISTRY>/publishhub-worker
+      #   web.image.repository        = <ECR_REGISTRY>/publishhub-web
+      #   sqs.queueUrl                = https://sqs.<REGION>.amazonaws.com/<ACCOUNT>/publishhub-jobs-production
+      #   sqs.region                  = <REGION>
+      #   serviceAccount.annotations.eks\.amazonaws\.com/role-arn = arn:aws:iam::<ACCOUNT>:role/publishhub-irsa
+      parameters: []
 
   destination:
     server: https://kubernetes.default.svc
