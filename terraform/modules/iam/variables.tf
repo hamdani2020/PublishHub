@@ -73,9 +73,9 @@ variable "create_github_oidc_provider" {
 }
 
 variable "github_oidc_thumbprint" {
-  description = "TLS certificate thumbprint for the GitHub OIDC provider."
+  description = "TLS certificate thumbprint for the GitHub OIDC provider. AWS no longer validates this for GitHub but it is still required by the API."
   type        = string
-  default     = "6938fd4d98bab03faadb97b34396831e3780aea1"
+  default     = "1c58a3a8518e8759bf075b76b750d4f2df264fcd"
 }
 
 variable "github_repository" {
