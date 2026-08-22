@@ -8,13 +8,12 @@
 global:
   image:
     # Overridden by CI with the Git commit SHA for immutable deploys
-    tag: "latest"
-
+    tag: "e39d13c75b1b5bc296fb935caac0f44f48c5b88e"
 # --- API Service ---
 api:
   image:
-    repository: ""  # set via values-account.yaml
-    tag: ""  # uses global.image.tag
+    repository: "" # set via values-account.yaml
+    tag: "" # uses global.image.tag
   replicaCount: 2
   env:
     NODE_ENV: production
@@ -26,12 +25,11 @@ api:
     minReplicas: 2
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
-
 # --- Worker Service ---
 worker:
   image:
-    repository: ""  # set via values-account.yaml
-    tag: ""  # uses global.image.tag
+    repository: "" # set via values-account.yaml
+    tag: "" # uses global.image.tag
   replicaCount: 1
   env:
     MAX_ATTEMPTS: "3"
@@ -45,41 +43,35 @@ worker:
     pollingInterval: 15
     cooldownPeriod: 60
     listLength: "10"
-
 # --- Web Frontend ---
 web:
   image:
-    repository: ""  # set via values-account.yaml
-    tag: ""  # uses global.image.tag
+    repository: "" # set via values-account.yaml
+    tag: "" # uses global.image.tag
   replicaCount: 2
   env:
     API_BASE_URL: "/api"
-
 # --- Queue Configuration ---
 queue:
   backend: sqs
-
 # --- Redis (still used for post state, but not for the queue) ---
 redis:
   enabled: true
   url: "redis://publishhub-redis:6379"
-
 # --- SQS ---
 sqs:
-  queueUrl: ""  # set via values-account.yaml
-  region: ""   # set via values-account.yaml
-
+  queueUrl: "" # set via values-account.yaml
+  region: "" # set via values-account.yaml
 # --- Observability ---
 observability:
   enabled: true
   datadog:
     env: "production"
     service: "publishhub"
-    version: ""  # set by CI from Git SHA
-
+    version: "e39d13c75b1b5bc296fb935caac0f44f48c5b88e" # set by CI from Git SHA
 # --- Service Account ---
 serviceAccount:
   create: true
   name: ""
   annotations:
-    eks.amazonaws.com/role-arn: ""  # set via values-account.yaml
+    eks.amazonaws.com/role-arn: "" # set via values-account.yaml
