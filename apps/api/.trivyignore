@@ -1,0 +1,4 @@
+# tar is a build-time dependency used by dd-trace for native addon installation.
+# It is not reachable at runtime (no user input is ever passed to it).
+# The DoS vector requires crafted gzip input which cannot reach this package in production.
+CVE-2026-59873
