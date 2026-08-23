@@ -42,6 +42,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/api/package-lock.json
 
+      - run: npm install -g npm@11.6.2
       - run: npm ci
 
       - name: Lint
@@ -69,6 +70,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
+      - run: npm install -g npm@11.6.2
       - run: npm ci
 
       - name: Lint
@@ -120,13 +122,28 @@ jobs:
         run: helm lint helm/publishhub
 
       - name: Lint (production values)
-        run: helm lint helm/publishhub -f helm/publishhub/values-production.yaml
+        run: |
+          helm lint helm/publishhub -f helm/publishhub/values-production.yaml \
+            --set sqs.queueUrl="https://sqs.us-east-1.amazonaws.com/000000000000/placeholder" \
+            --set sqs.region="us-east-1" \
+            --set api.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-api" \
+            --set worker.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-worker" \
+            --set web.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-web" \
+            --set 'serviceAccount.annotations.eks\.amazonaws\.com/role-arn=arn:aws:iam::000000000000:role/placeholder'
 
       - name: Template (default values)
         run: helm template publishhub helm/publishhub > /dev/null
 
       - name: Template (production values)
-        run: helm template publishhub helm/publishhub -f helm/publishhub/values-production.yaml > /dev/null
+        run: |
+          helm template publishhub helm/publishhub -f helm/publishhub/values-production.yaml \
+            --set sqs.queueUrl="https://sqs.us-east-1.amazonaws.com/000000000000/placeholder" \
+            --set sqs.region="us-east-1" \
+            --set api.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-api" \
+            --set worker.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-worker" \
+            --set web.image.repository="000000000000.dkr.ecr.us-east-1.amazonaws.com/publishhub-web" \
+            --set 'serviceAccount.annotations.eks\.amazonaws\.com/role-arn=arn:aws:iam::000000000000:role/placeholder' \
+            > /dev/null
 
   # Terraform: format check and validate
   terraform:
@@ -185,7 +202,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan with Trivy
-        uses: aquasecurity/trivy-action@0.31.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ matrix.image }}:ci-${{ github.sha }}
           format: table
