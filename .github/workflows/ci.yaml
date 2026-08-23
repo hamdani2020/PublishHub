@@ -5,8 +5,17 @@ on:
     branches: [main]
     paths-ignore:
       - "helm/publishhub/values-production.yaml"
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+      - "CONTRIBUTING.md"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "LICENSE"
+      - "CONTRIBUTING.md"
 
 concurrency:
   group: ci-${{ github.ref }}

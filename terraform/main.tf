@@ -59,6 +59,8 @@ module "iam" {
   sqs_queue_arns        = [module.sqs.queue_arn, module.sqs.dlq_arn]
   ecr_repository_arns   = values(module.ecr.repository_arns)
   github_repository     = var.github_repository
+  github_owner_id       = var.github_owner_id
+  github_repo_id        = var.github_repo_id
 
   create_github_oidc_provider = var.create_github_oidc_provider
 
