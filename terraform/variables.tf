@@ -81,6 +81,18 @@ variable "github_repository" {
   type        = string
 }
 
+variable "github_owner_id" {
+  description = "Immutable numeric ID of the GitHub owner (user or org). Required for repos created after July 15 2026. Get with: gh api users/OWNER --jq '.id'"
+  type        = string
+  default     = ""
+}
+
+variable "github_repo_id" {
+  description = "Immutable numeric ID of the GitHub repository. Required for repos created after July 15 2026. Get with: gh api repos/OWNER/REPO --jq '.id'"
+  type        = string
+  default     = ""
+}
+
 variable "create_github_oidc_provider" {
   description = "Whether to create the GitHub OIDC provider (set to false if it already exists in the account)."
   type        = bool

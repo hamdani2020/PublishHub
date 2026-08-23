@@ -118,6 +118,18 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 locals {
   github_oidc_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
+
+  # Build the OIDC sub claim in the correct format.
+  # Repos created after July 15 2026 use immutable format: repo:owner@ID/repo@ID:*
+  # Older repos use: repo:owner/repo:*
+  github_owner = split("/", var.github_repository)[0]
+  github_repo  = split("/", var.github_repository)[1]
+
+  github_oidc_sub_claim = (
+    var.github_owner_id != "" && var.github_repo_id != ""
+    ? "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repo_id}:*"
+    : "repo:${var.github_repository}:*"
+  )
 }
 
 resource "aws_iam_role" "github_actions" {
@@ -137,7 +149,7 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:*"
+            "token.actions.githubusercontent.com:sub" = local.github_oidc_sub_claim
           }
         }
       }
