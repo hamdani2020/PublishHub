@@ -3,18 +3,16 @@ name: Deploy
 on:
   push:
     branches: [main]
-    paths:
-      - "apps/**"
-      - "helm/**"
-      - "Dockerfile*"
-      - "docker-compose*.yaml"
-      - ".github/workflows/deploy.yaml"
     paths-ignore:
       - "**/*.md"
       - "docs/**"
       - "LICENSE"
       - "CONTRIBUTING.md"
       - ".gitignore"
+      - "scripts/**"
+      - "terraform/**"
+      - "argocd/**"
+      - ".kiro/**"
 
 # Cancel in-progress deploy runs for the same branch.
 concurrency:
