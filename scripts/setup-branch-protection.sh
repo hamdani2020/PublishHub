@@ -7,6 +7,8 @@
 #   - No force pushes or branch deletion
 #   - Deploy bot can push image tag commits directly (no status check gate)
 #
+# Usage:
+#   ./scripts/setup-branch-protection.sh
 
 set -euo pipefail
 
