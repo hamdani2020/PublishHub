@@ -1,12 +1,3 @@
-# Build context for apps/worker (spec task 7.1).
-#
-# The two entries that matter are `.venv` and `__pycache__`. The virtualenv is
-# built by `make test-worker` against the host's Python and its interpreter
-# symlinks point at paths that do not exist in the image, so copying it in would
-# be both large and useless. Bytecode caches are worse than useless: they are
-# written by whichever Python compiled them and, if stale, shadow the source you
-# think you are running.
-
 # Host virtualenv, built by make lint-worker / test-worker.
 .venv
 venv
@@ -24,9 +15,7 @@ __pycache__
 .coverage
 htmlcov
 
-# The test suite and its dependencies stay out of the image entirely
-# (Requirement 6.2). requirements-dev.txt is excluded with them: the runtime
-# install reads requirements.txt only.
+
 tests
 pytest.ini
 ruff.toml
