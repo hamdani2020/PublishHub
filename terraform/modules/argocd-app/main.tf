@@ -1,12 +1,46 @@
 # Manages the ArgoCD Application resource via kubectl.
 # This injects account-specific Helm parameters (ECR repos, SQS URL, IRSA ARN)
 # so they never need to live in a public git repository.
-#
-# Uses a null_resource + local-exec instead of kubernetes_manifest to avoid
-# the chicken-and-egg problem where the provider requires a live cluster
-# connection at plan time.
+
 
 locals {
+  app_project_manifest = yamlencode({
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "AppProject"
+
+    metadata = {
+      name      = var.project
+      namespace = var.argocd_namespace
+    }
+
+    spec = {
+      description = "${var.project} application project"
+
+      sourceRepos = [var.repo_url]
+
+      destinations = [
+        {
+          server    = "https://kubernetes.default.svc"
+          namespace = var.destination_namespace
+        }
+      ]
+
+      clusterResourceWhitelist = [
+        { group = "", kind = "Namespace" },
+        { group = "rbac.authorization.k8s.io", kind = "ClusterRole" },
+        { group = "rbac.authorization.k8s.io", kind = "ClusterRoleBinding" },
+      ]
+
+      namespaceResourceWhitelist = [
+        { group = "*", kind = "*" }
+      ]
+
+      orphanedResources = {
+        warn = true
+      }
+    }
+  })
+
   app_manifest = yamlencode({
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -91,7 +125,7 @@ locals {
 
 resource "null_resource" "apply_argocd_application" {
   triggers = {
-    manifest_sha = sha256(local.app_manifest)
+    manifest_sha = sha256("${local.app_project_manifest}${local.app_manifest}")
   }
 
   provisioner "local-exec" {
@@ -101,15 +135,23 @@ resource "null_resource" "apply_argocd_application" {
         --region ${var.sqs_region} \
         --kubeconfig /tmp/publishhub-kubeconfig
 
+      cat > /tmp/publishhub-argocd-project.yaml <<'MANIFEST'
+${local.app_project_manifest}
+MANIFEST
+
       cat > /tmp/publishhub-argocd-app.yaml <<'MANIFEST'
 ${local.app_manifest}
 MANIFEST
 
       kubectl apply \
         --kubeconfig /tmp/publishhub-kubeconfig \
+        -f /tmp/publishhub-argocd-project.yaml
+
+      kubectl apply \
+        --kubeconfig /tmp/publishhub-kubeconfig \
         -f /tmp/publishhub-argocd-app.yaml
 
-      rm -f /tmp/publishhub-kubeconfig /tmp/publishhub-argocd-app.yaml
+      rm -f /tmp/publishhub-kubeconfig /tmp/publishhub-argocd-project.yaml /tmp/publishhub-argocd-app.yaml
     EOT
   }
 }

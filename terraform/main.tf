@@ -88,6 +88,36 @@ resource "helm_release" "argocd" {
 }
 
 
+# --- Argo Rollouts (progressive delivery) ---
+resource "helm_release" "argo_rollouts" {
+  name             = "argo-rollouts"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-rollouts"
+  version          = "2.37.7"
+  namespace        = "argo-rollouts"
+  create_namespace = true
+  wait             = true
+  timeout          = 300
+
+  depends_on = [module.eks]
+}
+
+
+# --- KEDA (event-driven autoscaling) ---
+resource "helm_release" "keda" {
+  name             = "keda"
+  repository       = "https://kedacore.github.io/charts"
+  chart            = "keda"
+  version          = "2.16.1"
+  namespace        = "keda"
+  create_namespace = true
+  wait             = true
+  timeout          = 600
+
+  depends_on = [module.eks]
+}
+
+
 module "argocd_app" {
   source = "./modules/argocd-app"
 
