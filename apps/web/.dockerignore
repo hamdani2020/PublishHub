@@ -1,11 +1,4 @@
 # Build context for apps/web (spec task 7.2).
-#
-# Same reasoning as apps/api/.dockerignore: the Dockerfile copies only the paths
-# it needs, so this file's job is to keep the context small and the layer cache
-# honest. The one entry that is about correctness rather than speed is
-# `node_modules` — a host tree installed on macOS carries binaries for the wrong
-# platform, and esbuild (which Vite runs) ships exactly that kind of
-# platform-specific binary.
 
 # Installed inside the image by `npm ci`, for the image's platform.
 node_modules
