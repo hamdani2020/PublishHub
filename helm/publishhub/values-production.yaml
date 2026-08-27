@@ -8,7 +8,7 @@
 global:
   image:
     # Overridden by CI with the Git commit SHA for immutable deploys
-    tag: "1695e04126026be0cb6a87a12232973689fd73a8"
+    tag: "7385ddf618c10f4cdf2e28cc08c24ce5f865e6c5"
 # --- API Service ---
 api:
   image:
@@ -68,7 +68,7 @@ observability:
   datadog:
     env: "production"
     service: "publishhub"
-    version: "1695e04126026be0cb6a87a12232973689fd73a8" # set by CI from Git SHA
+    version: "7385ddf618c10f4cdf2e28cc08c24ce5f865e6c5" # set by CI from Git SHA
 # --- Service Account ---
 serviceAccount:
   create: true
