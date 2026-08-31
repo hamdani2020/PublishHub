@@ -27,6 +27,7 @@ venv/
 *.tfvars.json
 *.tfplan
 tfplan
+tfplan.txt
 terraform.tfstate
 terraform.tfstate.*
 .terraform/

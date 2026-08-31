@@ -40,7 +40,7 @@ metadata:
 spec:
   podIdentity:
     provider: aws-eks
-    identityOwner: operator
-  {{- /* The KEDA operator uses the service account's IRSA annotation for AWS credentials */}}
+    identityOwner: keda
+  {{- /* The KEDA operator uses its own service account's IRSA annotation for AWS credentials */}}
 {{- end }}
 {{- end }}

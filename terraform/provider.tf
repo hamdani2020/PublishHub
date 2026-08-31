@@ -10,28 +10,8 @@ provider "aws" {
   }
 }
 
-# Helm provider configured via EKS cluster credentials.
-# Used to install ArgoCD on the cluster.
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
-  }
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name, "--region", var.aws_region]
-    }
-  }
-}
+# Note: the helm and kubernetes Terraform providers are intentionally not
+# configured here. Cluster add-ons are installed via the helm CLI at apply time
+# (see modules/helm-release), which avoids the plan-time dependency on the EKS
+# cluster endpoint and keeps a single `terraform apply` working from a cold
+# start.

@@ -68,20 +68,30 @@ module "iam" {
 }
 
 
+# --- Cluster add-ons (installed via helm CLI at apply time) ---
+# These use the helm-release module rather than the helm Terraform provider so
+# that a single `terraform apply` works from a cold start. The helm/kubernetes
+# providers would require the cluster endpoint at plan time, which does not
+# exist yet on the first apply.
+
 # --- ArgoCD Installation ---
-resource "helm_release" "argocd" {
-  name             = "argocd"
+module "argocd" {
+  source = "./modules/helm-release"
+
+  cluster_name     = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  aws_region       = var.aws_region
+  release_name     = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  version          = "7.3.11"
+  chart_version    = "7.3.11"
   namespace        = "argocd"
-  create_namespace = true
-  wait             = true
   timeout          = 600
 
-  set {
-    name  = "server.service.type"
-    value = "ClusterIP"
+  min_ready_nodes = var.node_group_min_size
+
+  values = {
+    "server.service.type" = "ClusterIP"
   }
 
   depends_on = [module.eks]
@@ -89,30 +99,40 @@ resource "helm_release" "argocd" {
 
 
 # --- Argo Rollouts (progressive delivery) ---
-resource "helm_release" "argo_rollouts" {
-  name             = "argo-rollouts"
+module "argo_rollouts" {
+  source = "./modules/helm-release"
+
+  cluster_name     = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  aws_region       = var.aws_region
+  release_name     = "argo-rollouts"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-rollouts"
-  version          = "2.37.7"
+  chart_version    = "2.37.7"
   namespace        = "argo-rollouts"
-  create_namespace = true
-  wait             = true
   timeout          = 300
+
+  min_ready_nodes = var.node_group_min_size
 
   depends_on = [module.eks]
 }
 
 
 # --- KEDA (event-driven autoscaling) ---
-resource "helm_release" "keda" {
-  name             = "keda"
+module "keda" {
+  source = "./modules/helm-release"
+
+  cluster_name     = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  aws_region       = var.aws_region
+  release_name     = "keda"
   repository       = "https://kedacore.github.io/charts"
   chart            = "keda"
-  version          = "2.16.1"
+  chart_version    = "2.16.1"
   namespace        = "keda"
-  create_namespace = true
-  wait             = true
   timeout          = 600
+
+  min_ready_nodes = var.node_group_min_size
 
   depends_on = [module.eks]
 }
@@ -131,5 +151,5 @@ module "argocd_app" {
   sqs_region    = var.aws_region
   irsa_role_arn = module.iam.worker_role_arn
 
-  depends_on = [module.eks, helm_release.argocd]
+  depends_on = [module.eks, module.argocd]
 }
